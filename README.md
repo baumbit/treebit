@@ -1,3 +1,3 @@
-# tree-roadmap
+# tree-vision
 
-hello earth
+The vision is to create an open social network.
