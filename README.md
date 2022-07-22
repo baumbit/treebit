@@ -6,10 +6,10 @@ Welcome to Treebit, a user-centric peer-to-peer social network, based on volunta
 This project is written in vanilla JavaScript, but developers are encouraged to implement Treebit in other languages.
 
 ## How do I start the app?
-First read ./docs/install.md and then run ./bin/launch.sh
+First read [./docs/install.md](./docs/install.md) then run ./bin/launch.sh.
 
 ## How do I start developing?
-Read ./docs/development.md
+See [./docs/development.md](./docs/development.md).
 
 ## What is Treebit?
 Treebit is an open protocol, with the purpose of fascilitating information sharing between users.
@@ -147,4 +147,7 @@ Signers are pseudonymous, untill they can provable tie their private key to thei
 The later can be done by signing a message and posting it on Treebit Hub specializing on KYC, Twitter, Facebook or similar.
 A user concerned with privacy should expose her/his/its node only on the TOR network.
 Note: a signer does NOT need to run a node. It is possible to create and sign a note offline and publish it using someone elses node.
+
+## License
+MIT License
 
