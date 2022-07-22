@@ -1,0 +1,98 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const store = {
+            replicant: {
+                 pris: {
+                     age: 3,
+                     color: 'green'
+                 },
+                 roy: {
+                     age: 4,
+                     color: 'white'
+                 }
+            }
+        };
+        const body = OO(document.getElementById('container'), store, undefined, {debug:10});
+        //const body = OO(document.getElementById('container'));
+        body('h3', 'OO and Expressions with Params');
+        const oo = body('div');
+        const {set} = oo.$;
+        const br = () => oo('br');
+        oo('span', 'Click the buttons and note how the observers reacts to the mutations.')('br');
+        oo('span', 'More importantly, make not how the do NOT react!')('br');
+
+        oo('span', 'Dont forget to Open the browser dev ')('b','console');
+        oo('span', ' to see more.');
+        br();
+        oo('b', 'To figure things out, click buttons and look at the source code:')('br');
+        oo('span', 'Button will update the value: "Pris" Age: $replicant/pris/age  Color: $replicant/pris/color');
+        oo('button', 'Give more life').onclick(() => {
+            set('replicant/pris/age', 10);
+        });
+        oo('button', 'Take some life').onclick(() => {
+            set('replicant/pris/age', 2);
+        });
+        oo('button', 'Set blue eye color').onclick(() => {
+            set('replicant/pris/color', 'blue');
+        });
+        br();
+        oo('span', 'Buttons will replace the container object "Roy" Age: $replicant/roy/age  Color: $replicant/roy/color');
+        oo('button', 'Give more life').onclick(() => {
+            set('replicant/roy', {age: 6, color: oo.$('replicant/roy/color')});
+        });
+        oo('button', 'Take some life').onclick(() => {
+            set('replicant/roy', {age: 1, color: oo.$('replicant/roy/color')});
+        });
+        oo('button', 'Set blue red color').onclick(() => {
+            set('replicant/roy/color', 'red');
+        });
+        br();
+        br();
+        oo('span', 'Below are observers of mutations and their parameterized paths. Only last obseverable mutation will be displayed:');
+        br();
+        br();
+        br();
+        oo('span').on('$replicant/pris/:someParam', false, (o, f) => {
+            console.log('->',{o});
+            f.text('$$replicant/pris/:someParam observes mutation, but value has to be picked: ' + o.$[o.segment]);
+        });
+        br();
+        oo('span').on('$replicant/pris/:someParam', /*if not false, true is implicit,*/ (someValue, f) => {
+            console.log({someValue});
+            f.text('$$replicant/pris/:someParam observes mutation, and value propagated: ' + someValue);
+        });
+        oo('br');
+        oo('br');
+        oo('br')('br');
+        oo('span', '"$$replicant/:age" observes only changes on the container objects. Note how specifying :age will extract the value: $replicant/:age');
+        oo('br')('br');
+        oo('span', '"$$replicant/:color/age" observes only when age changes BUT displays the color: $replicant/:color/age');
+        oo('br')('br');
+        oo('span', '"$$replicant/:color/color" observes only when color changes and displays the color: $replicant/:color/color');
+        oo('br')('br');
+        oo('br')('br');
+
+        oo.on('$replicant/:carrot', exampleWithSingleParam => {
+            console.log('Observing changes on replicant objects. exampleWithSingleParam=', exampleWithSingleParam);
+        });
+        // ...and here params are used to access the value associated with the segment.
+        oo.on('$:all/:stuff', manyParams => {
+            console.log('Observing changes to all stuff. all=', manyParams.all, ' stuff=', manyParams.stuff);
+        });
+
+        oo.on('$:all/:stuff $replicant/:color', arr => {
+            // two paths, hence two items in array
+            // the all+stuff has two params, hence it should be accessed using param names
+            // the color has only one param, so you get direct access
+            console.log('Observing many expressions and many params. all+stuff=', arr[0]);
+            console.log('Observing many expressions and many params. color=', arr[1]);
+        });
+
+   
+    };
+</script>
+

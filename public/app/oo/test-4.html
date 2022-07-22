@@ -1,0 +1,33 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+    test4
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+       function setupDefault() {
+            const oo = OO(document.getElementById('container'))('div'),
+                  store = oo.context.store,
+                  storekeeper = oo.context.storekeeper;
+            return {oo, store, storekeeper};
+        }
+
+        function FooTag(oo) {
+            const div = oo('div');
+            div('input').onevent('input', ({event}) => {
+                console.log('event', event);
+            })('button');
+        }
+
+        function TestDestroy() {
+            const {oo} = setupDefault();
+            oo(FooTag);
+            //oo.destroy();
+        }
+
+        TestDestroy();
+
+        console.log('test: OK');
+    };
+</script>
+

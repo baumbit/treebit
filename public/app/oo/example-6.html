@@ -1,0 +1,11 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        OO(document.getElementById('container'))('h1', 'OO: Namespace (and SVG)')
+        ._('svg', {xmlns:"http://www.w3.org/2000/svg"})('circle', {r:"65", cx:"25", cy:"25"});
+    };
+</script>
+

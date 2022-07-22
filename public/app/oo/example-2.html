@@ -1,0 +1,48 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const body = OO(document.getElementById('container'), undefined, undefined,  {debug:10});
+        //const body = OO(document.getElementById('container'));
+        body('h3', 'OO and Rendering');
+        body('span', 'While OO offers no explicit rendering pipline,');
+        body('span', 'it should be easy to switch between rendering paths.');
+
+        function SwitcherrooView(oo) {
+            const view = oo('div');
+            view('h3', 'This is a view that shows different contents');
+            let smurfDiv, trollDiv, fraggleDiv;
+            oo.x('makeTheSwitch', (type) => {
+                if(type === 'smurf') {
+                    smurfDiv = view('div', {ref: 'hello'});
+                    smurfDiv('span', 'Fun smurf. This span will be recycled when clicking troll.')
+                    smurfDiv('div', 'This is a div, it will be substitued with a span when clicking troll.')
+                } else if(type === 'troll') {
+                    trollDiv = view('div', {ref: 'hello'});
+                    trollDiv('span', 'Troll pops in sunshine.')
+                    trollDiv('span', 'This is a span')
+                } else if(type === 'fraggle') {
+                    fraggleDiv = view('div', {replaceRef: 'hello'});
+                    fraggleDiv('span', 'Yes, they were replaced. Next time you click them they will be re-created.');
+                } else if(type === 'gargamel' && fraggleDiv) {
+                    fraggleDiv = view('div', {replace: fraggleDiv});
+                    fraggleDiv('span', 'Replaced by using the object.');
+                }
+            });
+        }
+        const view = body(SwitcherrooView);
+        body('button', 'Show smurf').onclick(() => view.makeTheSwitch('smurf'));
+        body('button', 'Show troll').onclick(() => view.makeTheSwitch('troll'));
+        body('button', 'Do the Fraggle: If Smurf or Troll is showing, you can replace them by ref.').onclick(() => {
+            try {
+                view.makeTheSwitch('fraggle');
+            } catch(e) {
+                alert('Click smurf or troll first');
+            }
+        });
+        body('button', 'You can remove using object too. Click me to remove fraggle text.').onclick(() => view.makeTheSwitch('gargamel'));
+     };
+</script>
+

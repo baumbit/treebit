@@ -1,0 +1,76 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+    test5 - xss
+    <br>
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.OO = OO;
+    window.onload = () => {
+        function setupDefault(storeFromServer) {
+            const
+                oo = OO(document.getElementById('container'), storeFromServer),
+                storekeeper = oo.context.storekeeper,
+                store = oo.context.store;
+            return {oo, store, storekeeper};
+        }
+
+        function FooTag({oo, on}, {evilString}) {
+            // arguments are never esacped
+            oo('span', '<b>innerHtml - xss attacked</b>')('span').html(evilString);
+            oo('br');
+            oo('span', '<b>innerHTML - escaped:</b>')('span').escapeHtml(evilString);
+            oo('br');
+            oo('span', '<b>store - xss attacked:</n>')('span').on('data/evil', (data, oo) => {
+                oo.html(data);
+            });
+            oo('br');
+            oo('span', '<b>store - requires manual protection:</n>')('span').on('data/evil', (data, oo) => {
+                oo.escapeHtml(data);
+            });
+            oo('br');
+
+            oo('span', '<b>input - manual protection:</n>')('input').on('data/evil', (data, {escape}) => {
+                escape(data);
+            });
+            oo('br');
+            oo('span', '<b>input - auto protection:</n>')('input', '$data/evil');
+            oo('br');
+
+
+            // expression
+            // expressions are HTML rendereable if there is NO data from store. data from store can never be rendered as HTML
+            oo('span', '<b>store expression - value only - xss protected:</n>')('span', '$data/evil');
+            oo('br');
+            // not possible to mix HTML and data from store
+            oo('span', '<b>store expression - human sentence - xss protected:</n>')('span', 'I <b>not bold</b> $data/evil');
+            oo('br');
+
+            // styles
+            oo('span', 'styling using expression is not escaped').style('$styler/coloring');
+        }
+
+        function TestA() {
+            const evilString = `<input value='click' type="button" onClick="alert('evil');"></b>`;
+            const evil = evilString;
+            const evilStore = {
+                data: {
+                    evil
+                },
+                styler: {
+                    coloring: {
+                        color: '#f00'
+                    }
+                }
+            };
+            const {oo} = setupDefault(evilStore);
+            //console.log({evilString}, OO.escapeStringRegexp(evilString));
+            oo(FooTag, {evilString});
+        }
+
+        TestA();
+
+        //console.log('test: OK');
+    };
+</script>
+

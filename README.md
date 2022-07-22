@@ -1,6 +1,15 @@
+Together we are distributed.
+Please fork the project now!
+
 # Treebit
 Welcome to Treebit, a user-centric peer-to-peer social network, based on voluntary co-operation.
 This project is written in vanilla JavaScript, but developers are encouraged to implement Treebit in other languages.
+
+## How do I start the app?
+First read ./docs/install.md and then run ./bin/launch.sh
+
+## How do I start developing?
+Read ./docs/development.md
 
 ## What is Treebit?
 Treebit is an open protocol, with the purpose of fascilitating information sharing between users.
@@ -32,12 +41,12 @@ The information is encapsulated, submitted and propagated in the network in the 
 When the message is created, its is saved locally as a "note".
 A note contains the actual content and some meta data.
 Most importantly the note is signed by the private key.
-This way it is mathematically provable what content is created by the same signer.
+This way it is mathematically provable which content is created by the same signer.
 Content creaters are therefor referred to as signers.
-You do not neeed to ask for permission to create a new signer on the network.
+You do not neeed to ask for permission to create a new user/signer on the network.
 You do not depend on the goodwill of a server to create new content.
-However you can not force the network to propagate your message either.
-The network will propagate and store as many copies of the note, as the network finds it valuable to do so.
+However, if you want the network to propagate your message to as wide an audience as possible.
+The network will store as many copies of the note, as the network finds it valuable to do so.
 Highly valuable content will hence be more likely to be discovered, propagated and stored.
 Since value is subjective, not everyone will store everything.
 
@@ -47,7 +56,7 @@ A note can even be created on an air-gapped/offline computer, copied to a USB-st
 An application running the Treebit protocol and connected to the network is referred to as a node.
 A node is connected to those peers on the network, that it knows about and derives the maximum value from being connected to.
 A node is hence incentivized to supply its connected peers with the information that it think its peers will value the most.
-Think of a node as a continously updating filtering function, that reduce its data set and pass on only that which it think its peers will find valuable.
+Think of a node as a continously updating filtering function, that reduce its information set and pass on only that which it think its peers will find valuable.
 A node therefor has a self-interest in actively seeking out novel information.
 Treebit encourages this behaviour and provides the means of letting signers publish information that makes it easier to find their content.
 
@@ -65,7 +74,7 @@ There is no restriction on who can decide to turn their node into a hub.
 In Treebit there are not user accounts, only signers and a signer is that which have signed a note with its private key.
 A signer can also sign a message containing meta-data about itself, this is referred to as a signer profile.
 The signer profile is timestamped and be propagated on the network.
-The profile may contain onion/IP-addresses.
+The profile may contain onion/IP-address.
 These adddresses may (or may not) point to resources that the signer is in control of.
 It could for instance point to a Treebit node, Lightning Node or a homepage.
 It is likely that a signer wants to propagate her/his/its content and hence point to a node with this content.
@@ -122,7 +131,7 @@ However users may very well be using Treebit in combination with Lightning Netwo
 ### DDoS
 While peer-to-peer networks are notoriously hard to shutdown, the individual nodes less so.
 Especially publicly facing hubs and signers running publically known hubs, are at great risk of DDoS-attacks.
-However a signer can always update its profile and point to new addresses, not yet under attack.
+However a node can always update its profile and point to new addresses, not yet under attack.
 A user can also be running duplicate nodes connected to the network, but choose to reveal only a subset of them in a signer profile.
 This way the content may be propagated using this hidden nodes, rendering the DDoS-attack less effective and hence more costly.
 

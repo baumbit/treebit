@@ -1,0 +1,31 @@
+<html>
+<head>
+<!-- gui -->
+<link rel="icon" type="image/png" href="../../favicon.ico">
+<script type="module" src="../../oo/oo.js"></script>
+<script type="module" src="../../oo/gesture-oo.js"></script>
+<script type="module" src="../../oo/ease-oo.js"></script>
+<script type="module" src="../../oo/resource-oo.js"></script>
+<script type="module" src="../../oo/infinite-list-tug-oo.js"></script>
+<!-- simshim -->
+<script type="module">
+    // dev purposes: begin
+        window.L = function() {
+            const
+                err = new Error(),
+                stack = err.stack.split('@');
+            console.log(window.L.count + ': ', ...arguments, stack[2], stack); window.L.count++;
+            //console.trace();
+        };
+        window.L.count = 1;
+        window.T = function() { console.log(...arguments); console.trace(); };
+    // dev purposes: end
+    import {createSimshim} from './simshim.js';
+    window.onload = () => createSimshim('simshim');
+</script>
+</head>
+<body>
+    <div id='simshim'></div>
+</body>
+</html>
+

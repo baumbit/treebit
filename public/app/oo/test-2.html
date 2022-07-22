@@ -1,0 +1,287 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+    test2
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = async () => {
+        function IsNot(was, s) {
+            if(was) throw '[Assertion failed] ' + s + ' Was ' + was + ' but expected it to evalutate to false.';
+        }
+
+        function Is(was, s) {
+            if(!was) throw '[Assertion failed] ' + s + ' Was ' + was + ' but expected it to evalutate to true.';
+        }
+
+        function Eq(was, expected, s) {
+            if(was !== expected) throw '[Assertion failed] ' + s + ' Was ' + was + ' but expected ' + expected;
+        }
+
+        function setupDefault() {
+            const oo = OO(document.getElementById('container'), null, null, {debug:1})('div'),
+                  store = oo.context.store,
+                  storekeeper = oo.context.storekeeper;
+            //for(let p in store.$) console.log('         ' + p, store.$[p]);
+            return {oo, store, storekeeper};
+        }
+
+       function testInit(s) {
+            const {oo, store} = setupDefault();
+            oo.$.set('foo', {bar:{boy:'girl'}});
+            Is(store.$.foo.$.bar, s + ' Did not store $ (an Obj container).');
+            Is(store.$.foo.$.bar.$.boy, s + ' Did not store $ (a Value container).');
+            Eq(store.$.foo.obj.bar.boy, 'girl', s + ' Did not store Value.');
+            oo.$.set('foo/bar/boy', {girl:{name:'sandra'}});
+            oo.context.destroyAsync();
+         }
+
+        function testTree(s) {
+            const {oo, store, storekeeper} = setupDefault();
+            // test set obj
+            oo.$.set('lifeform', {organic:{human:{boy:{name:'joe'}}}});
+            const boy$Obj = store.$.lifeform.$.organic.$.human.$.boy.obj;
+            Eq(boy$Obj, store.$.lifeform.obj.organic.human.boy, s + ' Obj stored in $ tree should b same ref as obj stored in Obj');
+            oo.$.set('lifeform/organic/human/boy/name', 'smoe');
+            Eq(boy$Obj, store.$.lifeform.obj.organic.human.boy, s + ' Obj stored in $ tree should b same ref as obj stored in Obj');
+            // test set path
+            oo.$.set('transportation/vehicle/twowheel/bike', {owner:'joe'});
+            const bike$Obj1 = store.$.transportation.$.vehicle.$.twowheel.$.bike;
+            oo.$.set('transportation/vehicle/twowheel/bike', {owner:'joes'});
+            Eq(bike$Obj1, store.$.transportation.$.vehicle.$.twowheel.$.bike, s + ' Not same object');
+            oo.$.set('transportation/vehicle/car', {owner:'alice'});
+            oo.$.set('transportation/boat/stella', {owner:'star'});
+            Eq(bike$Obj1, store.$.transportation.$.vehicle.$.twowheel.$.bike, s + ' Not same object');
+            const clone = JSON.parse(JSON.stringify(store.$.transportation.obj));
+            Eq(oo.$('transportation/vehicle/twowheel/bike/owner'), clone.vehicle.twowheel.bike.owner, s + ' Not same value');
+            oo.$.set('planets/in/the/deep', 'space');
+            Eq(oo.$('planets/in/the/deep'), 'space', s + ' Not same value');
+            oo.context.destroyAsync();
+         }
+ 
+        function testRemove(s) {
+            const {oo, store, storekeeper} = setupDefault();
+            oo.$.set('foo', {bar:{boy:'girl',smurf:{blue:'red'}}});
+            storekeeper.remove('foo/bar/boy');
+            Eq(store.$.foo.obj.bar.boy, undefined, s + ' Value was not properly removed.');
+            storekeeper.remove('foo/bar');
+            IsNot(store.$.foo.$.bar, s + ' $ (an Obj container) was not removed.');
+            IsNot(store.$.foo.obj.bar, s + ' The Obj was not removed.');
+            Is(store.$.foo, s + ' Removed to much.');
+            storekeeper.remove('foo');
+            IsNot(store.$.foo, s + ' Did not remove root path.');
+            oo.context.destroyAsync();
+        }
+
+        function testDrop(s) {
+            const {oo, store, storekeeper} = setupDefault();
+            oo.$.set('foo', {bar:{boy:'girl',smurf:{blue:'red'}}});
+            storekeeper.on('foo/bar/boy', () => {});
+            storekeeper.on('foo', () => {});
+            oo.$.drop('foo/bar/boy');
+            Eq(store.$.foo.obj.bar.boy, undefined, s + ' Value was not properly removed.');
+            IsNot(store.$.foo.$.bar.$.boy, s + ' $ (an Obj container) was not removed.');
+            oo.$.drop('foo');
+            IsNot(store.$.foo, s + ' The Obj was not removed.');
+            oo.context.destroyAsync();
+        }
+
+        function testListener(s) {
+            const {oo, store, storekeeper} = setupDefault();
+            let removeBoyListener;
+            removeBoyListener = storekeeper.on('foo/bar/boy', () => {});
+            Is(store.$.foo, s + ' Even if there is no data stored at path, listener should be able to register.');
+            Eq(store.$.foo.on.length, 0, s + ' Bad listeners count.');
+            Eq(store.$.foo.$.bar.on.length, 0, s + ' Bad listeners count.');
+            Eq(store.$.foo.$.bar.$.boy.on.length, 1, s + ' Bad listeners count.');
+            storekeeper.remove('foo/bar/boy');
+            Is(store.$.foo.$.bar.$.boy, s + ' $ with listeners should not be removed.');
+            removeBoyListener();
+            IsNot(store.$.foo.$.bar.$.boy, s + ' $ with zero listeners should be removed.');
+            removeBoyListener = storekeeper.on('foo/bar/boy', () => {});
+            oo.$.set('foo', {bar:{boy:'girl'}});
+            Eq(store.$.foo.$.bar.$.boy.on.length, 1, s + ' Bad listeners count.');
+            removeBoyListener();
+            Is(store.$.foo.$.bar.$.boy, s + ' Removing listener should not remove data.');
+            Eq(store.$.foo.$.bar.$.boy.on.length, 0, s + ' Bad listeners count.');
+            removeBoyListener = storekeeper.on('foo/bar/boy', () => {});
+            Eq(store.$.foo.$.bar.$.boy.on.length, 1, s + ' Bad listeners count.');
+            storekeeper.remove('foo/bar');
+            Is(store.$.foo, s + ' Root should be preserved, when a leaf has a listner.');
+            removeBoyListener();
+            storekeeper.remove('foo');
+            IsNot(store.$.foo, s + ' When there are not listeners in the tree, the root should be removed.');
+
+            let removeGirlListener = storekeeper.on('glue/rab/girl', () => {});
+            oo.$.set('glue/rab/girl', {hello:'world'});
+            oo.$.shake('glue/rab/girl');
+            Is(store.$.glue.$.rab.$.girl, 'Shaking when there is listener, should preserve value.')
+            removeGirlListener();
+            oo.$.shake('glue/rab/girl');
+            IsNot(store.$.glue.$.rab.$.girl, 'Shaking when there is no listener, should remove value.')
+
+            oo.$.set('rot', {a:'b'});
+            let removeRotListener = storekeeper.on('rot', () => {});
+            removeRotListener();
+            Is(oo.$('rot'));
+
+            let countNotify;
+            countNotify = 0;
+            oo.$.set('foo', {bar:{boy:'girl',smurf:{blue:'red'}}});
+            storekeeper.on('foo/bar/boy', () => { countNotify++});
+            oo.$.drop('foo/bar/boy');
+            Eq(countNotify, 1, 'notify after drop');
+            countNotify = 0;
+            oo.$.set('foo', {bar:{boy:'girl',smurf:{blue:'red'}}});
+            storekeeper.on('foo/bar/boy', () => { countNotify++});
+            oo.$.drop('foo/bar/boy', true, false);
+            Eq(countNotify, 2, 'notify after drop');
+            oo.context.destroyAsync();
+
+            //console.log('store:', store);
+        }
+
+        function testExpression(s) {
+            console.log(s + ' TODO');
+        }
+
+        function testPropagation(s) {
+            const {oo, on, $:{$, set}} = setupDefault().oo;
+            set('foo', {bar:{boy:'girl'}}, true);
+            let step = 1;
+            on('foo/bar/boy', (o) => { //console.log(step, 'child path', o);
+                switch(step) {
+                    // same value twice should NOT propagate second time
+                    case 1: if(o === 'girl') break;
+                    case 3: if(o === 'man') break;
+                    // 
+                    case 2: // intentional fall-through
+                    case 4: // intentional fall-through
+                    default:
+                        console.log({o});
+                        throw 'full path. step=' + step;
+                }
+            });
+            let man;
+            on('foo/bar', (o) => { //console.log(step, '---------->parent path', o);
+                switch(step) {
+                    case 1: if(o.boy === 'girl') break;
+                    case 2: if(o.boy === 'girl') break;
+                    case 3: man = o.boy; break;
+                    default:
+                        console.log({o});
+                        throw 'parent path. step=' + step;
+                }
+            });
+            step = 2; set('foo/bar/boy', 'girl', true); // girl twice in a row
+            step = 3; set('foo/bar/boy', 'man', true);
+            Eq(man, 'man', 'value inside an object change propagation failure.');
+            oo.context.destroyAsync();
+        }
+
+        function testWhen(s) {
+            const assert = (path, when, cb) => {
+                const {oo, on, $:{$, set}} = setupDefault().oo;
+                set('foo', {bar:{boy:'girl', crazy:undefined, bool:true}}, true);
+                let is, r = 'default value';
+                on(path, when, v => {
+                    r = v;
+                    is = cb(v);
+                });
+                if(!is) throw `path=${path} when=${JSON.stringify(when)} result=${r}`;
+                oo.context.destroyAsync();
+            };
+            assert('foo/bar/boy', {when:'girl'}, v => {
+                Eq(v, 'girl', 'string compare failed');
+                return true;
+            });
+            assert('foo/bar/boy', {when:['cow','girl']}, v => {
+                Eq(v, 'girl', 'string in array compare failed');
+                return true;
+            });
+            assert('foo/bar/boy', {when:{girl:'cow'}}, v =>  {
+                Eq(v, 'cow', 'string transform failed');
+                return true;
+            });
+            assert('foo/bar/crazy', {when:undefined}, v => { //console.log({v});
+                Eq(v, undefined, '"undefined" compare failed');
+                return true;
+            });
+            assert('foo/bar/crazy', {when:{undefined:'sane'}}, v => {
+                Eq(v, 'sane', '"undefined" transform failed');
+                return true;
+            });
+            assert('foo/bar/bool', {when:{true:'truthy'}}, v => {
+                Eq(v, 'truthy', '"truthy" transform failed');
+                return true;
+            });
+            assert('foo/bar/bool', {when:true}, v => {
+                Eq(v, true, 'true compared failed');
+                return true;
+            });
+        }
+
+        async function testDestroyAsync(s) {
+            let resolve;
+            const promise = new Promise((res) => { resolve = res; });
+
+            const
+                createApp = (rootElement, renderVirtual, app={countTimeout:0,countInterval:0,countPromise:0}) => {
+                    let oo = OO(rootElement, undefined, undefined, {renderVirtual});
+                    if(renderVirtual) {
+                        oo.context.setHeadlessHistory();
+                    } else {
+                        oo = oo('div')('span');
+                    }
+                    oo.timer(20, {interval:true}, () => {
+                        app.countInterval++;
+                        //console.log('interval tick');
+                    });
+                    oo.timer(10, () => {
+                        app.countTimeout++;
+                        //console.log('timeout tick');
+                    });
+                    oo.addPromise(new Promise((res) => {
+                        app.countPromise++;
+                        setTimeout(() => {
+                            //console.log('promise tick');
+                            res();
+                        }, 100);
+                    }));
+                    app.oo = oo;
+                    return app;
+                },
+                destroyApp = (app, expectedCount) => {
+                    app.oo.context.destroyAsync(({count}) => {
+                        Eq(count, expectedCount, s + ' bad OO count');
+                        Eq(app.countTimeout, 1, s + ' bad timeout count');
+                        Eq(app.countInterval, 2, s + ' bad interval count');
+                        Eq(app.countPromise, 1, s + ' bad promise count');
+                    });
+                };
+
+            const app1 = createApp(document.getElementById('container'), false);
+            const app2 = createApp(undefined, true);
+            setTimeout(() => {
+                destroyApp(app1, 1);
+                destroyApp(app2, 0);
+                resolve();
+            }, 60);
+
+            return promise;
+       }
+
+       testInit('Init:');
+       testTree('Tree:');
+       testRemove('Remove:');
+       testDrop('Drop:');
+       testListener('Listener:');
+       testExpression('Expression:');
+       testPropagation('Propagation:');
+       testWhen('When:');
+       await testDestroyAsync('Destroy');
+
+       console.log('test: OK');
+
+    };
+</script>
+

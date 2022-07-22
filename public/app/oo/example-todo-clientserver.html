@@ -1,0 +1,53 @@
+<html lang="en">
+   <head>
+        <title>Client Server - ToDo</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+    </head>
+    <script type="module">
+        import OO from './oo.js';
+        import {createResource} from "./resource-oo.js";
+        import {createServer} from './example-todo-server.js';
+        import {createClient} from './example-todo-client.js';
+
+        async function resourceClient(path, data, cacheOptions) {
+            // this is an intermediate step executed in the client environment,
+            // before request passed on to the server. its a good place to check
+            // if resource is already stored in a cache or similar and/or manipulate
+            // the request before asking the server.
+            // when quering the server, you can select what ever protocol you want:
+            // XMLRequest, sockets, fetch or what ever. in this example lets simulate
+            // the network requests and just pass on the path to the server:
+            const parcel = await server.simulateFetch(path, data);
+            return parcel;
+        }
+
+        const
+            server = createServer(),
+            {resource, resourceAsync, setResourceAsync} = createResource(resourceClient),
+            ooptions = {
+                globalProps: {
+                    log: function() {
+                        const
+                            err = new Error(),
+                            stack = err.stack.split('@');
+                        console.log('[client todo]', ...arguments, stack[2]);
+                    }
+                },
+                ooFunction: {
+                    // make resource available and linkable to Tugs,
+                    // so that resources can tried to Tug life-cycle and
+                    // garbage collected (resources are saved to store).
+                    res:resource, resAsync:resourceAsync, setres:setResourceAsync, setresAsync:setResourceAsync
+                }
+            },
+            store = {show: {value:'All'}}; // default store data
+
+        createClient(ooptions, true);
+    </script>
+    <body id='app'>
+        <b>Client Server - ToDo</b>
+    </body>
+</html>
+
+

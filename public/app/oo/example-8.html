@@ -1,0 +1,12 @@
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const {oo} = OO(document.getElementById('container'));
+        oo('i', 'todo');
+        //oo('h1', 'OO: Hidden, Detachable and Drag n Drop');
+        //oo(null)(null)('span', 'my parent is not visible in DOM and not my children either')(null)('span', 'Check the DOM yourself!');
+    };
+</script>
+

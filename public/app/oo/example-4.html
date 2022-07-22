@@ -1,0 +1,80 @@
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const body = OO(document.getElementById('container'), undefined, undefined, {debug:2}),
+              oo = body('div');
+        window.oo = body;
+        oo('h3', 'OO and Store Promises');
+        oo('span', 'To improve first impression by reducing browser loading latency, the app can be run on server,')('br');
+        oo('span', 'so that the store can be populated with data,')('br');
+        oo('span', 'and then sent to the browser where it can be imported into the app.')('br');
+        oo('span', 'Note that OO use deterministic ref variables to identify DOM elements, so that the app can hook into the')('br');
+        oo('span', 'existing app. This means that the app could be rendered to HTML on server.')('br');
+        oo('span', 'By combining rendering to HTML and populating store, latency is reduced considerably.')('br');
+        oo('span', 'This is achieved by using Promises.')('br');
+        oo('h3');
+        oo('span', 'The ".on" function, may return a Promise.')('br');
+        oo('br');
+
+        oo.$.set('smurf', {age:'hundread years', color: 'blue', hat: 'horse', clothes: ['hat', 'shoes', 'trousers']}); // TODO remove this and fix the gracefull error  FIX!!!
+        oo('span', 'Smurf age: $smurf/age');
+        oo('br')('br');
+        oo('span', 'Smurf hair color: $smurf/color');
+
+        oo.on('$smurf/age', (age, f) => {
+            console.log('Observering smurf age on plain path. age=', age, ' from this object ref='+f.ref)
+        });
+        oo.on('$smurf/age', false, ({age}, f) => {
+            // notice the 'false':
+            //    it tells us that we do NOT want a meta-object
+            //    it also tells us that we do NOT want the value itself, but the object the value belongs to
+            console.log('Observering smurf age on plain path. destructored age=', age);
+        });
+        oo.on('$smurf/clothes', true, (o, f) => { // notice the 'true', it tells us to that o is a meta-data object
+            console.log('Observering smurf clothes on plain path and got the meta data object with utility metods:');
+            o.each(s => console.log('      each prints:', s));
+        });
+        oo.on('$:lifeform/age', true, (o, f) => { // notice the 'true', it tells us to that o is a meta-data object
+            console.log('Observering with params path and got the meta data object with utility metods:');
+            o.each(s => console.log('      each prints:', s));
+        });
+
+        oo.on('$:lifeform/age', true, (o, f) => {
+            // and mutating the color when ever age changes
+            console.log('Observering all lifeforms using params', o);
+            // NOTE: since value of :lifeform is only known at the time of the callback
+            // invocation, we can not be sure what kind of lifeform it is we are working with.
+            // to make things worse, we can not use the path attached to the result either (o.path),
+            // because it ends with /age, while we want to update the color.
+            // to fix this, we make use of the absolute path feature.
+            const absolutePath = o.fullPath + '/../color';
+            console.log('Observer was trigged on path:', o.path, ' and we will update the color on absolutePath: ', absolutePath);
+            f.$.set(absolutePath, 'orange');
+        });
+        oo.on('$:lifeform/age', (o, f) => {
+            return new Promise((r) => {
+                setTimeout(() => {
+                    f.$.set(o.fullPath + '/../color', 'gray');
+                    r();
+                }, 1000); 
+            });
+        });
+        oo.on('$:lifeform/age', false, (o, f) => {
+            console.log({o});
+            return new Promise((r) => {
+                setTimeout(() => {
+                    f.$.set(o.fullPath + '/../color', 'black');
+                    r();
+                }, 2000); 
+            });
+        });
+        oo.$.set('smurf/age', 42); // tip: remove this and notice that expressions with params needs to be triggered to have effect
+        oo('br')('br');
+        oo.resolvePromisesAsync(() => {
+            oo('i', 'All promises are resolved.');
+        });
+     };
+</script>
+

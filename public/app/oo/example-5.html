@@ -1,0 +1,278 @@
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const body = OO(document.getElementById('container'), undefined, undefined,  {debug:2})('div'),
+              {set} = body.$,
+              go = body.go;
+
+        // shim history example:
+        //body.context.history = (function() {
+        //    const arr = [],
+        //          curr = {};
+
+        //    function replaceState(state, title, href) {
+        //        //console.log(state, title, href);
+        //        curr.title = title;
+        //        curr.href = href;
+        //        arr[arr.length-1] = state;
+        //        history.replaceState(state, title, href);
+        //    }
+
+        //    function pushState(state, title, href) {
+        //        //console.log(state, title, href);
+        //        curr.title = title;
+        //        curr.href = href;
+        //        arr.push(state);
+        //        history.pushState(state, title, href);
+        //    }
+
+        //    function popState() {
+        //        arr.pop();
+        //        const state = arr[arr.length-1];
+        //        console.log({state});
+        //        return state;
+        //    }
+
+        //    return {
+        //        onpopstate: l => { 
+        //            window.onpopstate = () => {
+        //                const state = popState();
+        //                return l({state});
+        //            };
+        //        },
+        //        replaceState,
+        //        pushState
+        //    };
+        //})();
+
+        //const body = OO(document.getElementById('container'), undefined, undefined,  undefined, 5)('div');
+        body.stylesheet(
+            `
+            App {
+                margin: 10;
+                margin-top: 10;
+                background-color: azure;
+            }
+
+            .fadeIn {
+                opacity: 1;
+                transition: 1s;
+            }
+
+            .fadeOut {
+                opacity: 0;
+                transition: 1s;
+            }
+
+            .hidden {
+                opacity: 0;
+                transition: 0.00001s;
+            }
+
+            Fadeblock {
+                display: block;
+            }
+             `, 'main'
+        );
+        body('h3', 'OO and Routes');
+        body('span', 'Routes are stored in the store,');
+        body('span', 'and you listen to routes using expressions.');
+        body('span', 'Note: OO work in the single-page app paradigm, which implies that nagivating BACK is NOT an "undo".');
+        body('span', 'Navigating back or forward is just like following a link.');
+        body('span', 'This implies that possible state changes will be preserved.');
+        body('span', 'This is also the reason why "old pages" will be visible when following some of the links here.');
+        body('span', 'To handle the transitioning between URLs, first createAct and  then use the utilities.');
+        body('br');
+        body('br');
+
+
+        function App(oo) {
+            oo('span', '[CODE] route');
+            oo('br');
+            oo('button', '[200 OK] /view/page1').onclick(() => go('/view/page1'));
+            oo('button', '[200 OK] /view/page2').onclick(() => go('/view/page2'));
+            oo('button', '[200 OK] /view/param1/example').onclick(() => go('/view/param1/example'));
+            oo('button', '[200 OK] /view/not/found/example').onclick(() => go('/view/not/found/example'));
+            oo('button', '[200 OK] /woow').onclick(() => go('/woow'));
+            oo('button', '[200 OK] /woow/cow').onclick(() => go('/woow/cow'));
+            oo('button', '[302 OK] /no/where1').onclick(() => go('/no/where1'));
+            oo('button', '[302 OK] /no/where2').onclick(() => go('/no/where2'));
+            oo('button', '[200 OK] /heaven/nirvana').onclick(() => go('/heaven/nirvana'));
+
+            oo('button', 'Transition: fade in with classname').onclick(() => go('/transition/in'));
+            oo('button', 'Transition: fade out with classname').onclick(() => go('/transition/out'));
+
+            const actuator = function(actuatorDone, {oo}) {
+                oo('span', 'Will wait 750 millis to simulate that user did actuator before triggering end callback');
+                setTimeout(actuatorDone, 750);
+            };
+            oo('button', 'Transition: in with actuator').onclick(() => go('/transition/in', undefined, {actuator}));
+            oo('button', 'Transition: out with actuator').onclick(() => go('/transition/out', undefined, {actuator}));
+
+            oo('br');
+        }
+
+        let count = 0;
+        function createRouter(app) {
+            const cue = app.createCue(app);
+
+            app.route({block:false}, '/*', () => {
+                console.log(count++, 'this one catches everything, but stops at nothing');
+                cue('all', {destroy: true, except:[Page2, 'Page1']}, () => {
+                    console.log('cleared a lot');
+                });
+                //console.log('consume:true/undefined/null or not providing an obj as first arg, will result in stopping route search');
+            });
+
+            app.route('/view/page1', () => {
+                cue({Page1});
+            });
+            app.route('/view/page2', () => cue({Page2, props:{smurf:'smyrf burger'}}));
+            app.route('/view/param1/:pongo', ({props}) => {
+                cue({Param1, props});
+            });
+            app.route('/woow', () => {
+                cue({Woow}); console.log(count++, '/woow route triggered');
+                //return true; // undefined is treated as truthy, i.e. continue parsing route with next handler
+            }, route => {
+                console.log('Cow will be parsed in next route handler.', route);
+                route('/cow', () => { console.log(count++, '/cow route triggered');
+                    cue({Cow, props:{smurf:'I exist'}});
+                });
+            });
+            app.route('/heaven/nirvana', () => {
+                cue('all', {destroy: true}, () => {
+                    cue({Nirvarna});
+                });
+            });
+
+            // redirects are easy to do
+            app.route(302, '/no/where1', () => {
+                console.log('*** callback invoked. redirect to page one***');
+                app.go('/view/page1');
+            });
+
+            app.route(302, '/no/where2', () => {
+                alert('will wait a while then redirect');
+                cue({Param1});
+                setTimeout(() => {
+                    console.log('callback invoked. delayed redirect');
+                    app.go('/view/page2');
+                }, 2000);
+            }); 
+
+            // Rotuer process handlers in the order they were added,
+            // hence "match all" has to be added last, just like this.
+            // * = will match everything after the *
+            app.route('/willNeverTrigger/*', () => {
+                cue({NotFound404, props:{hello:'mars'}});
+            });
+            app.route('/view/*', () => {
+                cue({NotFound404, props:{hello:'view'}}); 
+            });
+
+            // Transition user experience between views can be designed using classNames.
+            app.route('/transition/in', ({hints:{actuator}}) => {
+                if(actuator) {
+                    cue({Fadeblock, actuator, create:true, props:{}})(({oo}) => {
+                        oo('span', '(INTERACTION IN DONE)');
+                    }); 
+                } else {
+                    cue({Fadeblock, className:'hidden', create:true, props:{}})({className:'fadeIn'}, ({oo}) => {
+                        oo('span', '(FADE IN)');
+                    }); 
+                }
+            });
+            app.route('/transition/out', ({hints:{actuator}}) => {
+                if(actuator) {
+                    const actuatorOut = (actuatorDone, {oo}) => {
+                        oo('span', 'Waiting 750 millis before ending actuator');
+                        setTimeout(actuatorDone, 750);
+                    }
+                    cue({Fadeblock, actuator: actuatorOut, replace:false, props:{}})(({oo}) => {
+                        oo.destroy();
+                    });
+                } else {
+                    cue({Fadeblock, replace:false, className:'fadeOut', props:{}})({destroy:true}); 
+                }
+            });
+
+            app.route('/*', () => {
+                cue({NotFound404, props:{hello:'all'}});
+            });
+        }
+
+        function Woow(oo) {
+            oo('span', 'Woow');
+            oo('div');
+        }
+
+        function Cow(oo) {
+            oo('span', 'Cow');
+            oo('div');
+        }
+
+        function Page1(oo) {
+            oo('span', 'This is Page1. You came to me using this href: ' + oo.$('route/url/href'));
+            oo('br');
+            oo('span', 'Route related data is fed into the store, so you can get it using oo.$$("route/url/href")');
+            oo('span', 'And since its in the store, you can of course also observe changes to the route using oo.on()');
+        }
+
+        function Page2(oo, props) {
+            oo('span', 'This is Page2. Props provided in router: smurf='+props.smurf);
+            oo('br');
+            oo('span', 'As a convenience the route data is also accessible in the props.');
+        }
+
+        function Page3(oo) {
+            oo('span', 'This is Page3');
+        }
+
+        function Param1(oo, props) {
+            console.log('Param1 Tug was invoked. All the URL related data can be found in props:', {props});
+            oo('span', 'Param1. the :pongo param segment is: ' + props.pongo);
+            oo('br');
+            oo('span', 'Just as with the URL, params are also fed to the the store at route/params (hence accessible throughout the application): ' + JSON.stringify(oo.$('route/params')) );
+        }
+
+        function NotFound404(oo, props) {
+            oo('span', '404: Page not found. Hello='+props.hello);
+        }
+
+        function Nirvarna(oo) {
+            oo('button', 'Drink water').onclick(() => {
+                set('nirvana/water', 'dry in the sun');
+            });
+            oo('button', 'Surf cloud').onclick(() => {
+                set('nirvana/cloud', 'dance in rain');
+            });
+
+            oo('span', 'Do fun stuff')
+                .on('$nirvana/water', 'b', ($, o) => {
+                    console.log('chain onto', o.elm);
+                    o('div', 'water='+$);
+                })
+                .on('$nirvana/cloud', {Umbrella, props: {stuff: 'hands'}}, ($, o) => {
+                    o('div', 'cloud='+$);
+                });
+        }
+
+        function Umbrella(oo, props) {
+            oo('b', 'Use your: ' + props.stuff);
+        }
+
+        function Fadeblock(oo) {
+            oo('span', 'Demo of transitions using className or actuator.');
+        }
+
+        const app = body(App);
+        createRouter(app);
+        // go to landing page.
+        // this will trigger route listeners and give a change to populate app with data etc
+        //app.go('/view/page1');
+     };
+</script>
+

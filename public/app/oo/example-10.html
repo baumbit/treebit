@@ -1,0 +1,71 @@
+<div id="container"></div>
+<script type="module">
+    import OO from './oo.js';
+    import {createResource} from './resource-oo.js';
+    window.onload = () => {
+
+        async function resourceClient(path, data, cacheOptions) {
+            if(path === 'hello/world') {
+                return {
+                    data,
+                    success: true
+                };
+            }
+            else if(path === 'number/of/humans') {
+                if(cacheOptions.exampleHint > 0.5) {
+                    return {
+                        data: 'implement ur own cache strategy (refresh page now to maybe see different result)',
+                        success: true
+                    };
+                } else {
+                    return {
+                        data: Math.random(),
+                        success: true
+                    };
+                }
+            }
+            else if(path === 'number/of/aliens') {
+                return {
+                    data: Math.random(),
+                    success: true
+                };
+            }
+            else console.error('bad path', path);
+        };
+        resourceClient.createResponseObject = function({data, error, from, cacheOptions}) {
+            return data; // just return the data
+            //return data {
+            //    data,
+            //    error,
+            //    from,
+            //    cacheOptions
+            //};
+        };
+
+        const
+            {resource, resourceAsync, setResourceAsync, buildPath} = createResource(resourceClient),
+            ooptions = {
+                globalProps: {log:console.log},
+                ooFunction: {
+                    // make resource available and linkable to Tugs,
+                    // so that resources can tried to Tug life-cycle and
+                    // garbage collected (resources are saved to store).
+                res:resource, resAsync:resourceAsync, setres:setResourceAsync, setresAsync:setResourceAsync
+                }
+         };
+
+        const
+            {oo, on, $:{$, set, drop, prepend, push}} = OO('container', undefined, undefined, ooptions);
+
+        oo.setres('hello/world', 'mars');
+        oo('span', '$hello/world/data');
+        oo('br');
+        oo('span', 'Aliens: ')('span').res('number/of/aliens', {ms: 1000*1}, (count, o) => {
+            console.log({count});
+            o.html(count);
+        });
+        oo('br');
+        oo('span', 'Humans: $number/of/humans').res('number/of/humans', {ms: 500, cache:{exampleHint:Math.random()}});
+    };
+</script>
+

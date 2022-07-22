@@ -1,0 +1,62 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+    test1
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+       function setupDefault() {
+            const oo = OO(document.getElementById('container'))('div'),
+                  store = oo.context.store,
+                  storekeeper = oo.context.storekeeper;
+            return {oo, store, storekeeper};
+        }
+
+        function FooTag(oo) {
+            oo('div')(BarTag);
+        }
+
+        function BarTag(oo) {
+            oo('span');
+            //console.trace();
+        }
+
+        function RecursiveTag(oo) {
+            RecursiveTag.count++;
+            if(RecursiveTag.count > 3500) {
+                console.log('Did you run out of callstack space?');
+                return;
+            } else if(RecursiveTag.count % 500 > 300) {
+                console.log('RecursiveTag count:', RecursiveTag.count);
+            }
+            oo('div')(RecursiveTag);
+        }
+        RecursiveTag.count = 0;
+
+        function testDOMSpam(s, nbrFooTags) {
+            const start = Date.now();
+            console.log('Number of FooTag to create:', nbrFooTags);
+            let {oo} = setupDefault();
+            for(let i = 0; i < nbrFooTags; i++) {
+                oo = oo(FooTag);
+            }
+            const delta = Date.now() - start;
+            console.log('Done in ' + Math.floor(delta / 1000)  + ' seconds (millis: ' + delta + ')');
+        }
+
+        function maxCallstack() {
+            alert('Will now attempt to exhaust the callstack.');
+            let {oo} = setupDefault();
+            oo(RecursiveTag);
+        }
+
+
+        testDOMSpam('DOMSpam', 1000);
+        testDOMSpam('DOMSpam', 2000);
+        testDOMSpam('DOMSpam', 10100);
+        maxCallstack();
+
+        console.log('test: OK');
+    };
+</script>
+

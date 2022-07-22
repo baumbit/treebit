@@ -1,0 +1,21 @@
+<html lang="en">
+    <head>
+        <title>Simple - ToDo</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        <meta charset="utf-8">
+    </head>
+    <script type="module">
+        import {createClient} from './example-todo-client.js';
+
+        const ooptions = {
+            globalProps: {
+                log: function() { console.log('[simple todo]', ...arguments); }
+            }
+        };
+
+        window.onload = () => createClient(ooptions);
+    </script>
+    <body id='app'>
+        <b>Simple - ToDo</b>
+    </body>
+</html>

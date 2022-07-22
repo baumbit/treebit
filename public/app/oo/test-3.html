@@ -1,0 +1,39 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+    test3
+</body>
+<script type="module">
+    import OO from './oo.js';
+window.onload = () => {
+
+    function test({prefix, nbrListeners, nbrRuns, nbrSegments}) {
+        const {oo, $, $:{set}} = OO();
+        let longPath = prefix+'/';
+        for(let i = 0; i < nbrSegments; i++) {
+            longPath += Math.random() + '/';
+        }
+        longPath += '';
+        set(longPath, -1);
+        for(let i = 0; i < nbrListeners; i++) {
+            oo.on(longPath, (v) => {
+                //console.log(v);
+            });
+        }
+        const startMillis = Date.now();
+        for(let i = 0; i < nbrRuns; i++) {
+            set(longPath, i);
+        }
+        const stopMillis = Date.now();
+        const deltaMillis = stopMillis - startMillis;
+        const millisPerRun = deltaMillis / nbrRuns;
+        const millisPerListener = millisPerRun / nbrListeners;
+        const store = oo.context.store;
+        console.log({prefix, nbrListeners, nbrSegments, nbrRuns, deltaMillis, millisPerRun, millisPerListener, store});
+        console.log(prefix, {millisPerListener});
+    }
+
+    test({prefix: 'short', nbrListeners: 1, nbrSegments: 1, nbrRuns: 10000});
+    test({prefix: 'long', nbrListeners: 10, nbrSegments: 1000, nbrRuns: 1000});
+};
+</script>
+

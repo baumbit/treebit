@@ -1,0 +1,284 @@
+<script type="module" src="./oo.js"></script>
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    //import {} from './lufo.js';
+    window.OO = OO;
+    window.onload = () => {
+        const deflatedContext = window.deflatedcOOntextFromServer;
+        const store = window.storeFromServer || {
+            planet: {
+                m: { name:'mars'},
+                j: { name:'jupiter'},
+                p: { name:'plato'},
+                e: {
+                    name:'earth',
+                    moon: {name:'themoon'}
+                }
+            },
+            other: {
+                list: ['e', 'j', 'm', 'p'],
+                subject: {
+                    food: 'bar'
+                }
+            }
+        };
+        const options = {
+            //renderVirtual: true,
+            debug: 2,
+            globalProps: {
+                warn: (s) => {
+                    console.warn('open console and check code:', s);
+                }
+            }
+        }
+        const body = OO(document.getElementById('container'), store, deflatedContext, options);
+        // note: all tags will become lowercase in browser
+        body('CenTer', 'OPEN THE BROWSER DEV CONSOLE AND SOURCE CODE - LOOK AT THAT TO UNDERSTAND EXAMPLE ');
+        const span = body('h3', 'OO offers: native tags,');
+        span.stylesheet(
+            `Body {
+                margin: 0;
+                margin-top: 0;
+                background-color: azure;
+            }`, 'main'
+        );
+        console.log(body.$);
+        body('br');
+        body('span', {style:{marginLeft: '10px'}})('b', 'method chaining,');
+        body('div')('span', 'and inline-style').style({fontSize: '20px'});
+        body('button', 'And buttons. Click me to replace body stylesheet')
+            .onclick(o => { //console.log(oo, event);
+                o.oo.stylesheet(
+                `Body {
+                    margin: 50;
+                    margin-top: 20;
+                    background-color: whitesmoke;
+                }`, 'main');
+                return false; // stopPropagation
+            });
+        body('br', {id: 'internally-refs-are-used-but-you-can-set-id'});
+        function IamATug(oo) {
+            const o = oo('span');
+            // expose one function like this...
+            oo.expose('setText', s => o.text(s));
+            // or use one named function like this...
+            oo.expose(function many(s) { s => o.text(s); });
+            // or expose many named functions like this,
+            // making it kind of similar to a revealing pattern
+            oo.expose([
+                function different(s){ s => o.text(s)},
+                function way(s){ s => o.text(s)}
+            ]);
+        }
+        body('h3', 'Tug')
+        body(IamATug).setText('A Tug, is a custom HTML tag, that can be built using named f_u_nctions.');
+        body('br');
+        body(IamATug, {tag: 'IamA_Named_Tug'}).setText('A Tug, can also be named defining a "tag" in "props" .');
+        IamATug.tugtag = 'IamA_Named_Tug_Predfined';
+        body(IamATug).setText('A Tug, can also be named setting the "tag" on the function itself.');
+        function CompositeTug(oo, props) {
+            const a = oo('span', props),
+                  b = oo('span'),
+                  setB = v => b.html(v);
+            //oo.defaultExpose = s => a.text(s);
+            oo.x(setB); // x is shorthand for expose
+            props.warn('you can set global props (can be overriden)')
+        }
+        const compositeTug = body(CompositeTug, {style:{color:'red'}, warn: () => { console.log('override warn log'); }}).setB('<br>A Tug accepts <b>props</b> and may expose methods.');
+        //compositeTug.defaultExpose('There is more');
+        function Span(oo, props={}) {
+            const o = oo('span', props);
+            oo.x(function v(s) { o.html(s); });
+        }
+        body(Span).v('And can be used to augment<br>native tags.<br>');
+        function ObservableTug({oo}) {
+                oo('span', 'It it also possible to observe stuff happning inside a tug.');
+                const fun = oo.xx('funWithAnObserver');
+                setTimeout(() => {
+                    fun('this text is sent via funWithAnObserver listener pattern');
+                }, 2000);
+        }
+        body(ObservableTug).funWithAnObserver(console.log);
+        body('br');
+        function TugExampleWithAttribute({oo}, props) {
+            oo('span', 'TugExampleWithAttribute: ' + props.foo);
+            console.log(props);
+        }
+        body(TugExampleWithAttribute, {foo:'bar'}); // compare with below
+        body('div', {foo:'bar'}); // sets attribute "foo" on div tag
+        body('br');
+        body('br');
+        body('h3', 'OO offers a ')('i', 'store ')('span', 'containing the state of the app.')('br');
+        body(Span, 'You can use expressions to get data from the store.')('br');
+        body(Span, 'Using an expresison like this "$$planet/j/name" you get:');
+        body('b', '$planet/j/name');
+
+        // phew... tired of writing body. lets shorthand it
+        const oo = body;
+        // and lets shorthand all this BR while at it
+        const br = 'br';
+        oo(br);
+        oo(Span, 'Or baked into a sentence $planet/j/name !');
+        oo(br);
+        // and why not chain br also
+        oo(Span, 'planet:$planet/j/name  Expression begins with a $$ and is ended with whitespace. To escape $$ use two of them')(br);
+        oo(Span, 'Many ($$planet/m/name , $$jupiter/j/name) expressions in one sentence: $planet/e/name , $planet/m/name')(br);
+        oo(Span, '$planet/e/name , $planet/m/name , $planet/j/name')(br);
+        oo(IamATug).setText('Exposed function also takes expressions: $planet/e/name')(br);
+        oo(CompositeTug, '@setB The red planet: $planet/m/name')(br);
+        const redButton = body('button', 'Update store by invoking ".set". Try changing name on $planet/m/name  by clicking.')
+            .onclick(({$}) => $.set('planet/m/name', prompt('Change the name of the red planet from "' +
+                $('planet/m/name') + '" to:', 'marsBar')))
+            .style({fontSize: '13px', color: 'red'});
+
+        body('button', 'The style can also be stored in the store. Turn me blue, then look here ->')
+            .style('$redButtonStyle')
+            .onclick(({$}) => $.set({redButtonStyle:{color:'blue', fontSize: '15px'}}));
+
+        body('button', 'Now change color only on this button. Notice in the code, how the other button does NOT listen on the color value change alone (for it to trigger, the whole style object needs to be updated)', {style: {fontSize: '13px'}})
+            .style({visibility: 'hidden'})
+            .style('$redButtonStyle/color')
+            .on('$redButtonStyle/color', false, (o) => {
+                console.log('Observing a value, but prefering the object that owns it', o);
+            })
+            .on('$redButtonStyle/color', true, (o) => {
+                console.log('Observing a value, and prefering to get it too', o);
+            })
+            .on('$redButtonStyle/color', (o) => {
+                console.log('Observing a value, its implicit you want the value', o);
+            })
+            .on('$redButtonStyle', ({color}, o) => {
+                if(color === 'blue') {
+                    o.style({visibility: 'visible'});
+                }
+            })
+           .onclick(({$}) => $.set('redButtonStyle/color', prompt('Change from '+$('redButtonStyle/color')+' to:', 'red')));
+
+        body('button', 'Pressing this button will update color AND notify parent observers', {style: {fontSize: '13px'}})
+            .style({visibility: 'hidden'})
+            .style('$redButtonStyle')
+            .on('$redButtonStyle', ({color}, o) => {
+                if(color === 'blue') {
+                   o.style({visibility: 'visible'});
+                }
+            })
+            .onclick(o => o.$.set('redButtonStyle/color', prompt('Change from '+o.$('redButtonStyle/color')+' to:', 'green'), true));
+        body('br');
+        body('br');
+        body(Span, 'Values in the stored are accessed using paths. Absolute paths are supported.');
+        body('button', 'Rename the red planet currently named "$planet/../planet/m/name "').onclick(o => {
+            const s = prompt('Rename from "' + o.$('planet/../planet/m/name') + '" to', 'heaven');
+            o.$.set('planet/../planet/m/name', s);
+        });
+        body('br');
+        body(Span, 'I am waiting for When the place is right').on('planet/m/name', {when:'heaven'}, (v, o) => o.text('And it is: ' +v));
+        body('br');
+       body('button', 'Test when with true').onclick(() => body.$.set('test/when', true))._(Span, 'I am waiting for everything that is true').on('test/when', {when:[true]}, (v, o) => o.text('Boom: ' +v));
+        body('br');
+        body('button', 'Test when with null').onclick(() => body.$.set('test/when', null))._(Span, 'I am waiting for everything that is a null').on('test/when', {when:[null]}, (v, o) => o.text('Boom: ' +v));
+        body('br');
+        body(Span, 'I am waiting for everything that is null or true').on('test/when', {when:[null,true]}, (v, o) => o.text('Boom: ' +v));
+        body('br');
+        body.$.set('test/when', 'justsomevalue');
+        body('button', 'Test when with undefined').onclick(() => body.$.set('test/when', undefined))._(Span, 'I am waiting for everything that is undefined').on('test/when', {when:undefined}, (v, o) => o.text('Boom: ' +v));
+        body('br');
+        body(Span, 'ERROR: This should never show').on('test/when/donotexist', {when:undefined}, (v, o) => o.text('Waited for a path that did not exist and was trigged: ' +v));
+        body('br');
+        const {css} = body;
+        css(`
+        .testRed {
+            color: #f00;
+        }
+        .testBlue {
+            color: #00f;
+        }
+        .testGreen {
+            color: #0f0;
+        }
+        `, 'TestWhenClasses');
+        body('div')('i', 'When can also be used for classNames').className('$test/when', {when: {
+            undefined: 'testRed',
+            null: 'testBlue',
+            true: 'testGreen'
+        }});
+        body('div')('i', 'Even when the path points to something that does not exist and hence is undefined').className('$test/when/donotexist', {when: {
+            undefined: 'testRed'
+        }});
+        body('br');
+        body(Span, 'Waiting to do transform').on('test/when', { when:{
+                             undefined: 'got-undefined',
+                             null: false,
+                             true: 'got-a-true',
+                             justsomevalue: 'got-a-justsomevalue'
+        }}, (v, o) => o.text('Value transformed: ' +v));
+        body('br');
+        function TugWhen({oo, css}, {hello}) {
+            css(`color: #f0f;`);
+            oo('span','Hello: ' + hello);
+        }
+        body(Span, 'Waiting to do transform to a Tug. Click the test true button!').on('test/when', {when:{
+                                    true:{TugWhen, props:{hello:'world'}},
+                                    null:{TugWhen, props:{hello:'nothingness'}}
+        }}, () => {});
+        body('br');
+
+        body('br');
+        body('span', 'Dynamically replaceable store listner: ')('b', '$planet/p/name').on((on) => {
+                let planet;
+                setInterval(() => {
+                        if(planet === 'm') planet = 'j';
+                        else planet = 'm';
+                        // note: oo will remove the old expression created when invoking
+                        // this on() function. hence only the latest will have an effect.
+                        on(`planet/${planet}`, (v, o) => {
+                                o.text(v.name);
+                        });
+                }, 2000);
+        });
+        body('br');
+
+
+
+
+        body('br');
+        body(Span, 'The dollar sign "$$" servers two purposes:');
+        body('li', 'Prefix to indicate an expression (example: a path with params).');
+        body('li', 'Shorthand for "store" when accessing data in store.');
+        body(Span, 'Basically USE the $$ whenever you want to GET something FROM the STORE or access something originating from store.');
+        body('br');
+        body(Span, 'If you want to PUT something into the STORE, then DO NOT USE a dollar sign $$');
+
+        // ----------------------------------- TIMER -----------------------------
+        body('br');
+        body('br');
+        const intervalDiv = body('span');
+        intervalDiv.timer(1000, {destroy:false, interval:2 /* true will print endlessly*/}, ({count, interval, delta}) => {
+            intervalDiv.text('Interval printing ' + count + '/' + interval + ': ' + delta);
+        });
+        body('br');
+        const timerDiv = body('div');
+        // note: timer does NOT return oo, instead it returns a clearing function for the timer
+        const clearTimerFunction = body.timer(3000, () => timerDiv('span', 'A timeout that  will print 1 time'));
+        const timerPromise = body.timer(3000, {promise:true}, () => {});
+        console.log(timerPromise);
+
+        function TimerTug(oo) {
+            const b = oo('b');
+            oo.timer(100, {interval:20}, ({count, delta}) => {
+                b.text('Self destructing in: ' + delta);
+                if(delta === 0) oo.destroy();
+            });
+            oo.timer(4000, {destroy:false}, () => {
+                console.log('A timeout that will log to console, despite OO being destroyed');
+            });
+        }
+        body(TimerTug);
+
+        // ------------------------------------------ IMAGE -------------------------
+        body('img', {src: 'https://upload.wikimedia.org/wikipedia/commons/thumb/c/c3/Amiga500_system.jpg/1920px-Amiga500_system.jpg'});
+    };
+
+</script>
+

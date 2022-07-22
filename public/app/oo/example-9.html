@@ -1,0 +1,92 @@
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+
+
+        // an ordinary and cumbersome problem when creating a web app,
+        // is to use data originating from the server, download it to
+        // the client and show it on screen. if the same app is
+        // also server-side rendered and running the same code as the 
+        // client in the browser, the task becomes even more difficult.
+        //
+        // With OO storing the data in the app is easy, just store it 
+        // in the store and update the HMTL whenever the data on the 
+        // observed/specified path is mutated. The same code can run
+        // server-side and in the browser. 
+        //
+        // However OO does not solve how to download the data from the
+        // server and how to then store it in the store. Also, this kind
+        // of mechanism should be different in the browser (use fetch) and
+        // on the server (no need to fetch from the server since app is
+        // already on the server, just access data directly).
+        //
+        // This problem is easily fixed using options.ooFunction, ass 
+        // exemplified below. By adding a resourceLoader to every oo
+        // instance created, all oo can access resources which may
+        // or may not have been downloaded to store.
+        // 
+        // Also note that on a server, the implementation of the
+        // resourceLoader may (probably should) be different compared
+        // to the implementation running in the browser.
+        //
+        // Doing it like this, makes it easy to write the same app code
+        // and run it both server and client side.
+
+        function mockupServer() {
+            return new Promise((resolve) => {
+                console.log('init a promise');
+                setTimeout(() => {
+                    console.log('timeout triggered');
+                    resolve({hello: 'value that could have been fetched from a server or similar'});
+                }, 1000);
+            });
+        }
+
+        function resourceLoader(oo/* OO relies heavily on scope, which is not availbable. oo second best thing so....*/, path) {
+            let valueOnPath = oo.$(path);
+            console.log('RESORUCE LOADER', {oo, path, valueOnPath});
+            oo.$.set(path, {hello: 'has unresolved promises (should be false): ' + oo.hasUnresolved()});
+            oo.addPromise((async () => {
+                const newValue = await mockupServer(); //console.log({newValue});
+                oo.$.set(path, newValue);
+            })());
+            //console.log('hasUnresolved', oo.hasUnresolved());
+            console.log('hasUnresolved', oo.hasUnresolved());
+            return oo.on(...[...arguments].slice(1));
+        }
+
+        const
+            override = Math.random() > 0.5,
+            overrideCue = Math.random() > 0.5;
+
+        let options = {
+            ooFunction: { // all oo instances will expose these functiosn
+                override,
+                res: resourceLoader
+            }
+        };
+        console.log({override, overrideCue, options});
+        if(!override && overrideCue) console.log('Throw error because override is false...');
+
+        if(overrideCue) options.ooFunction.createCue = () => {};
+
+        const {oo, on, $:{$, set}, res} = OO('container', undefined, undefined, options);
+        oo.createCue();
+
+
+        oo('span', 'Hello ')('b').on('example/using/on', ({hello}, o) => o.text(hello));
+        set('example/using/on', {hello:'using ordinary .on to compare with'});
+        oo('br')._('br');
+
+        oo('span', 'Hello with no value set: ')('b').res('example/using/res', ({hello}, o) => o.text(hello));
+        oo('br');
+
+        oo.resolvePromisesAsync(() => {
+            oo('i', 'promises are resolved.');
+        });
+
+    };
+</script>
+

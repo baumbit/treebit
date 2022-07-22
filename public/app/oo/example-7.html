@@ -1,0 +1,105 @@
+<body id="container">
+</body>
+<script type="module">
+    import OO from './oo.js';
+    window.onload = () => {
+        const {oo, on, $:{$, set}} = OO(document.getElementById('container'));
+        oo('h1', 'OO: When (power useage)');
+
+        // When app runs for the first time and store is empty,
+        // it is possible to use 'when' to make a request to
+        // the server, to fetch the initial data set.
+        // You can think of it like this:
+        //                      on  = listens to store
+        //                      $   = get data from store
+        //                      set = save data to store
+        //      on + when:undefined = request (if store does not have data, fetch it and put it in store)
+        //
+        // Note how the GUI is created dynamically as the paths,
+        // are fetched from the server.
+        //
+        // Also note how this can be levered using a path like this:
+        //      foo/:/bar/:/:count
+        // Where the single ':' will match against all segments, even
+        // if the object itself is not of interest (hence the parameter name
+        // is left out) the :count param can then be used.
+        //
+        // This mean you can create application code not knowing for certain,
+        // what exactly the segment will be. Hence these paths names can be generated
+        // dynamically. 
+        //
+        // Also note that expression supports:
+        //      foo/../../bar
+        //
+
+        let mockupServer = {
+            arr:[
+                {
+                    startCount: 10,
+                    path: '/first/count'
+                },
+                {
+                    startCount: 40,
+                    path: '/second/count'
+                },
+            ]
+        };
+
+        // fetch store-path from mockup server
+        const fetchCountPathFromServer = (cb) => {
+            setTimeout(() => {
+                cb(mockupServer.arr);
+            }, 200);
+        };
+
+        const fetchStartCountFromServer = ({path}, cb) => {
+            console.log('mockup server and invoke callback when "server result"', path);
+            setTimeout(() => {
+                if(path.startsWith('/first')) {
+                    cb(mockupServer.arr[0].startCount);
+                } else {
+                    cb(mockupServer.arr[1].startCount);
+                }
+            }, 1000)
+        };
+
+        const saveToServer = ({path, value}, cb) => {
+            setTimeout(() => {
+                if(path.startsWith('/first')) {
+                    mockupServer.arr[0].startCount = value;
+                } else {
+                    mockupServer.arr[1].startCount = value;
+                }
+                cb();
+            }, 10)
+        };
+
+        function createBumper(COUNT_PATH) {
+            const COUNT = 'dynamicPath'+ COUNT_PATH;
+            oo('br')._('br')
+                ._('span', 'Count ('+COUNT+') (at 70 server will be updated and client update itself): $'+COUNT)
+                ._('button', 'Bump').onclick(() => set(COUNT, $(COUNT) + 10))
+                ._('button', 'Reset').onclick(() => set(COUNT, undefined));
+            on(COUNT, {when:undefined}, () => {
+                fetchStartCountFromServer({path:COUNT_PATH}, count => {
+                    set(COUNT, count);
+                });
+            });
+            on(COUNT, {when:70}, () => {
+                saveToServer({path:COUNT_PATH, value:-50}, () => {
+                    set(COUNT, undefined);
+                });
+            })
+        }
+        oo('span', 'Last value')('b').on('dynamicPath/:/:count', ({count}, o) => o.text(count));
+
+
+        fetchCountPathFromServer(arr => {
+            arr.forEach(({path}) => {
+                createBumper(path);
+            });
+        });
+
+    };
+</script>
+

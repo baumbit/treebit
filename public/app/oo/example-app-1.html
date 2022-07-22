@@ -1,0 +1,129 @@
+<html>
+<head>
+
+<div id="container"></div>
+<script type="module">
+import OO from './oo.js';
+window.onload = () => {
+    const {oo, $, go} = OO('container');
+    //const {oo, $, go} = OO({prefixUrlPath: '/oo/example-app-1.html#'});
+    oo.stylesheet(`
+    :root {
+        --widthfull: 320px;
+    }
+    button {
+        color: #f00;
+    }
+    .enter {
+        transition: 0.2s linear;
+        transform: translateX(10%);
+    }
+    .enterRight {
+        transition: 1.2s linear;
+        transform: translateX(-5%);
+    }
+    .exit {
+        transition: 0.5s linear;
+        transform: translateX(90%);
+    }
+    `, 'root');
+
+    function Topbar({oo, css, x}) {
+        css(`
+            background-color: #0f0;
+        `);
+        const remember = oo('span', 'Always remember the tenth of november');
+        oo.expose('set', s => { remember.text(s); });
+        oo('button', 'Goto user Sara').onclick(() => go('/user/sara'));
+        oo('button', 'Destroy all').onclick(() => go('/destroy/all'));
+        oo('button', 'Create from array').onclick(() => go('/create'));
+    }
+
+    function Home({oo, css}) { //console.log('creating new HOME');
+        css(`
+        Home {
+            background-color: #aaa;
+            width: var(--widthfull);
+            display: block;
+        }
+        `);
+        oo('b', 'Example App 1');
+        oo('br');
+        oo(Panel)
+            .clickOne(() => oo('span', 'Click one'))
+            .clickTwo(() => oo('span', 'Click two'));
+        oo('br');
+    }
+
+    function Panel({oo, css, x}) { //console.log('creating new PANEL');
+        css(`
+            background-color: #040;
+        `);
+        oo('button', '1').onclick(x('clickOne'));
+        oo('button', '2').onclick(x('clickTwo'));
+    }
+
+    function UserPage({oo, css}, {name}) { console.log('creating new USER_PAGE');
+        css(`
+            position: absolute;
+            color: #fff;
+        `);
+        oo('h3', 'Welcome to user page of ' + name);
+        const randomUserName = Math.random();
+        oo('button', 'Goto user ' + randomUserName).onclick(() => go('/user/'+randomUserName));
+        oo('button', 'Destroy this view').onclick(() => oo.destroy());
+        oo.x('addSpan', (s) => oo('span', s));
+    }
+
+    function Loading(oo) {
+        oo('h1', 'Loading.....' + oo.children.length).style({color: '#0f0'});
+        setTimeout(oo.x('doneLoading'), 1000);
+    }
+
+    function createApp(oo) {
+        oo.css(`
+        Body {
+            background-color: #030;
+            width: var(--widthfull);
+            display: block;
+        }
+        `, 'app');
+        const topbar = oo(Topbar);
+        topbar.set('Welcome!');
+
+        const act = oo.createCue(oo);
+
+        // If you are using many instances of a Tug, you have to specify an id,
+        // otherwise Tug name will be used as id.
+        const UserPageAct = {id: 'myUserPage', UserPage, className: 'enterRight', defaultProps:{age: '42'}};
+
+        oo.route('/user/:name', ({props}) => {
+            act({Home, className: 'enter', props})(({oo}) => {
+                act({Loading}, ({oo}) => { //console.log('oo=', oo);
+                    oo.doneLoading(() => {
+                        act({Loading, destroy: true});
+                        // act will merge UserPageAct.defaultProps and props from the router,
+                        // where defaultProps will be overwritten by props.
+                        console.log({...UserPageAct});
+                        act({...UserPageAct, replace:true, props})(({oo}) => {
+                            oo.addSpan('transtion done');
+                        });
+                    });
+               });
+               //act({...UserPageAct, props})(({oo}) => {
+               //     oo.addSpan('transtion done');
+               //});
+            });
+        });
+        oo.route('/create', () => act([ {Home}, {...UserPageAct, replace: true, props:{name:'Bob'}} ]));
+        oo.route('/destroy/all', () => act([ {Home, destroy: true}, {id:UserPageAct.id, destroy: true} ]));
+    }
+    createApp(oo);
+    go('/');
+};
+</script>
+</head>
+<body>
+</body>
+</html>
+

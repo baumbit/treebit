@@ -1,0 +1,10 @@
+{
+    "name": "treehut",
+    "version": "0.0.1",
+    "description": "Tree node and webapp.",
+    "author": "baumbit",
+    "type": "module",
+    "dependencies": {},
+    "private": false,
+    "license": "MIT"
+}

@@ -1,0 +1,140 @@
+OO.swipe = function(cb/*y, flingSpeed*/, oo, xController, yController, {dragThresholdX=3, dragThresholdY=3, speedFactor=10}) {
+    //console.log(...arguments);
+    let dataY = {}, dataX = {}, isSwiping = false;//startY, prevY, distanceY, time;
+    let elm = oo.elm,
+        downSet = (o, screen) => {
+            o.fling = false;
+            o.prev = screen;
+            o.start = o.prev;
+            o.distance = 0;
+            o.time = Date.now();
+            o.begin = true;
+            o.end = false;
+            o.move = false;
+        },
+        down = (event) => {
+            if(isSwiping) throw new Error('bad state. already swiping');
+            if(oo.isDestroyed) return;
+            isSwiping = true;
+            if(xController) downSet(dataX, event.screenX);
+            if(yController) downSet(dataY, event.screenY);
+        },
+        moveSet = (o, screen, dragThreshold) => {
+            if(o.distance < 0 && screen > o.prev) {
+                o.distance = 0;
+                o.time = Date.now();
+            }
+            else if(o.distance > 0 && screen < o.prev) {
+                o.distance = 0;
+                o.time = Date.now();
+            }
+            const delta = o.prev - screen;
+            if(screen > o.prev) o.distance += Math.abs(delta);
+            else o.distance -= Math.abs(delta);
+            o.prev = screen;
+            o.fling = false;
+            o.delta = delta*-1;
+            o.screen = screen;
+            o.drag = Math.abs(o.distance) > dragThreshold;
+            if(o.move) o.begin = false;
+            o.move = true;
+        },
+        move = (event) => {
+            if(!isSwiping) return;
+            if(oo.isDestroyed) return;
+            if(xController) moveSet(dataX, event.screenX, dragThresholdX);
+            if(yController) moveSet(dataY, event.screenY, dragThresholdY);
+            cb(dataX, dataY);
+        },
+        upSet = (o, screen, dragThreshold) => {
+            o.time = Date.now() - o.time; //console.log(time);
+            const speed = (Math.abs(o.distance) / o.time) * speedFactor; //console.log({time, speed});
+            o.drag = false;
+            o.fling = Math.abs(o.distance) > dragThreshold; //console.log(o.distance, dragThreshold)
+            o.delta = 0;
+            o.distance = Math.floor(o.distance * speed);
+            o.move = false;
+            o.end = true;
+        },
+        up = (event) => {                                                                   //console.log(event);
+            if(!isSwiping) return;
+            if(oo.isDestroyed) return;
+            isSwiping = false;
+            if(xController) upSet(dataX, event.screenX, dragThresholdX);
+            if(yController) upSet(dataY, event.screenY, dragThresholdY); //console.log({dataY});
+            //dataY.inversedDistance = dataY.distance*-1;
+            //dataX.inversedDistance = dataX.distance*-1;
+            cb(dataX, dataY);
+        };
+
+    oo.elm.addEventListener('mousedown', down);
+    window.addEventListener('mousemove', move);
+    window.addEventListener('mouseup', up);
+    oo.elm.addEventListener('mouseleave', up);
+    let destroy = () => {
+        elm.removeEventListener('mousedown', down, false);
+        elm.removeEventListener('mousemove', move, false);
+        elm.removeEventListener('mouseup', up, false);
+        elm.removeEventListener('mouseleave', up, false);
+    };
+
+    oo.onDestroy(() => {
+        if(destroy) {
+            destroy();
+            destroy = null;
+        }
+    });
+
+    return destroy;
+};
+
+OO.scroll = (function(curr) {
+    // when mouse enters a element, the scrolling event will be sent to the oo scroll handler for that element
+
+    function scroll(event) {
+        if(curr) {
+            if(curr.cb(event) !== false) {
+                event.preventDefault();
+            }
+        }
+    }
+
+    if(!OO.isNodeJs) {
+        //const windowOnWheel = window.onwheel;
+        window.addEventListener('mousewheel', event => scroll(event), {passive:false});
+        //window.onwheel = (event) => scroll(event);
+    }
+
+    function add(cb, oo) {
+        let
+            elm = oo.elm,
+            handler = (/*event*/) => {
+                if(oo.isDestroyed) return;
+                //if(o.preventDefault) event.preventDefault();
+                curr = o; //console.log('scroll now owned by', oo);
+            };
+
+        elm.addEventListener('mouseenter', handler, false);
+
+        let o = {
+            cb,
+            destroy: () => {  //console.log('destroy scroll listener', o.oo);
+                elm.removeEventListener('mouseenter', handler, false);
+                if(curr === o) curr = null;
+                o = null;
+                elm = null;
+                handler = null;
+            }
+        };
+
+        oo.onDestroy(() => {
+            if(o) o.destroy();
+        });
+
+        return o;
+    }
+
+    return add;
+})();
+
+
