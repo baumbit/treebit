@@ -18,6 +18,7 @@ Such a network participant is referred to as a node and its connected nodes are 
 The network is a peer-to-peer network.
 Put Twitter, Git, Bitcoin, Lighning Network, Patreon and Torrent in a blender, mix it and you got Treebit.
 Treebit is one hundred percent based around incentive models.
+Read [./TREEBIT.md](./TREEBIT.md) to learn what problem Treebit attempts to solve.
 
 ### What makes Treebit different from other peer-to-peer networks?
 Treebit is designed to put the individual user first and above all else.
