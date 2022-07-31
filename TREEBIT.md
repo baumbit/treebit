@@ -4,6 +4,13 @@ Cryptography is strongly associated with privacy, anonymity and secrecy.
 While users of Treebit can remain anonymous the focus of Treebit is on creating a public, fully transparent and secure open network.
 The intended purpose is to provide a communication utility for society, that enables a stream of high quality information and the substrate for a healthy public dialog.
 
+## Treebit
+A users can post a text snippet on Treebit, either as a reply to a previous post or as a new one.
+When posts are added like this, the content branches out exactly like a tree: the trunk is the first post and the branches, then grows out of the main trunk or of the smaller branches.
+Because the content is organised like a tree, a user browsing the content can scroll both vertically and horizontally.
+While the horizontall scrolling is maybe a little bit different compared to make other social media platforms, the core functionality is actually the same as all other social media.
+So what makes Treebit different and what problem is Treebit trying to solve?
+
 
 ## The problem
 A major issue is plaguing internet based social networks: they are susceptible to spam.
