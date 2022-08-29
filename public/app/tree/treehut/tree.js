@@ -54,23 +54,40 @@ export function Tree({oo, css}) {                                               
 };
 
 export function List({oo, css, go, resAsync, $}, {µ, log}) {                           //console.log('create List');
-////    debug
-////    setInterval(() => {
-////       const count = (o, cnt=0) => {
-////           while(o) {
-////               cnt++;
-////               if(o.oldNext) cnt += count(o.oldNext);
-////               o = o.next;
-////            }
-////           return cnt;
-////       };
-////       log({head, nbrItems: count(head), branchPoint});
-////   }, 5000);
+    //debug
+    setInterval(() => {
+       const count = (o, cnt=0) => {
+           while(o) {
+               cnt++;
+               if(o.oldNext) cnt += count(o.oldNext);
+               o = o.next;
+            }
+           return cnt;
+       };
+       log({head, nbrItems: count(head), branchPoint});
+   }, 5000);
    const
         {height:VIEW_HEIGHT, width:VIEW_WIDTH} = oo.getBoundingClientRect(), // note: this will also force layout
         Y_MARGIN = 0,
         BOTTOM = VIEW_HEIGHT,
         TOP = 0,
+
+        // XXX
+        // these values defines the scrolling window of the items,
+        // i.e. how many items should exist.
+        // more means more smooth scrolling if user is switching a lot between scrolling up and down,
+        // because items neither have to be added or removed.
+        // but more items means more items to move and measure when scrolling, which when too much slows down rendering.
+        // note: probably what creates most lag is fetching data from server, hence this values should probably be
+        // changed before changing the scroll values.
+        // if TOP_REMOVE_NOTE === TOP; means that only the items visible on screem should exist
+        // if TOP_REMOVE_NOTE === Math.ceil(TOP - VIEW_HEIGHT / 2); twice at many items, as how many fits on screen
+
+        TOP_REMOVE_NOTE = Math.ceil(TOP - (VIEW_HEIGHT/2)),
+        BOTTOM_REMOVE_NOTE = Math.ceil(BOTTOM + (VIEW_HEIGHT/2)),
+        //TOP_REMOVE_NOTE = TOP,            // DEBUG
+        //BOTTOM_REMOVE_NOTE = BOTTOM,      // DEBUG
+
         LEFT_MARGIN_NOTE = 3,
         BOUNCE_BOTTOM = BOTTOM - 100, // TODO pick this value from size of last element instead
         BOUNCE_TOP = TOP + 50, // TODO pick this value from size top element instead
@@ -204,9 +221,13 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                     o.topY = VIEW_HEIGHT;
                     scrollHandler.bounce();
                  } else if(o.topY > BOTTOM) {                                   //console.log('below bottom');
-                    //emptyBinder(o);
-                    remove(o);
-                    isAboveBottomView = false;
+                    //console.log('note below bottom');
+                    if(o.topY > BOTTOM_REMOVE_NOTE) {
+                        //console.log('remove note below bottom');
+                        //emptyBinder(o);
+                        remove(o);
+                        isAboveBottomView = false;
+                    }
                  }
             } else {                                                            //log('items appear from BELOW. top=', o.noteId);
                 if(!o.next && o.topY < BOUNCE_TOP) {                            //console.log('last item went to high. bounce');
@@ -215,10 +236,14 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                     break;
                 }
                 if(bottomY < TOP) {                                             //log(`REMOVE head. next head=${head?.next.noteId}`);
-                    let next = o.next;
-                    remove(head);
-                    o = head = next;
-                    continue;
+                    //console.log('note above top');
+                    if(bottomY < TOP_REMOVE_NOTE) {
+                        //console.log('remove note at top');
+                        let next = o.next;
+                        remove(head);
+                        o = head = next;
+                        continue;
+                    }
                 }
             }
             // horizontal
@@ -468,7 +493,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
     }
 
     function clearBranchLeftRight(preserveBinder) {                //console.log('clearBranchLeftRight'); console.trace();
-        console.log('clear binders', 'left:', !!branchPoint.leftBinder, 'right:', !!branchPoint.rightBinder);
+        //console.log('clear binders', 'left:', !!branchPoint.leftBinder, 'right:', !!branchPoint.rightBinder);
         if(branchPoint.leftBinder) {
             branchPoint.leftId = null;
             branchPoint.leftBinder.prev = null;
@@ -507,7 +532,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         }
     }
 
-    function remove(o, isRemoveAll, isIgnorePrev) {                        console.trace('remove');
+    function remove(o, isRemoveAll, isIgnorePrev) {                        //console.trace('remove');
         if(branchPoint){
             if(branchPoint.selectedBinder === o) {
                 branchPoint = {};

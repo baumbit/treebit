@@ -18,6 +18,8 @@ export function createScrollHandler(oo, cb) {
         controllerY = {},
         controllerX = {};
 
+    //let isEndDrag;
+
     function resetX(b=true) {                                      //console.log('resetX', b);
         stateX = { x: 0, speed: 0, easeValue: 0, idle: true };
         if(b) scrollX = createScrollX(oo, requestRender);
@@ -100,6 +102,13 @@ export function createScrollHandler(oo, cb) {
         if(scrollX) scrollX.fling(x);
     }
 
+    //function endDrag() {
+    //    console.log('end drag');
+    //    //resetX();
+    //    //resetY();
+    //    isEndDrag = true;
+    //}
+
     resetX();
     resetY();
 
@@ -107,6 +116,10 @@ export function createScrollHandler(oo, cb) {
         if(scrollY) scrollY.update({delta:0,distance:event.deltaY*-1,start:0,screen:0,fling:true});
     });
     oo.onswipe((swipeX, swipeY) => {                                            //console.log('swipeY', {...swipeY});
+        //if(isEndDrag) {
+        //    if(swipeY.end) isEndDrag = false;
+        //    return;
+        //}
         if(scrollX) scrollX.update(swipeX);
         if(scrollY) scrollY.update(swipeY);
     }, controllerX, controllerY, {dragThresholdX, dragThresholdY, speedFactorX, speedFactorY});
@@ -119,6 +132,7 @@ export function createScrollHandler(oo, cb) {
         resetX,
         isEnabledX,
         isEnabledY,
+        //endDrag,
         requestRender
     };
 };
@@ -306,7 +320,7 @@ function createScrollX(oo, requestRender) {
         requestRender();                                                            //console.log('snap', x);
     }
 
-function fling(distance) {                                                       //console.log('fling', distance);
+    function fling(distance) {                                                       //console.log('fling', distance);
         state.snap = false;
         state.snapFinished = false;
         state.fling = true;

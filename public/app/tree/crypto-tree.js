@@ -50,8 +50,11 @@ export async function createSignerIdAsync({pub, signer}) { // TODO refactor to g
 
 export async function generateSignerAndPrivAsync(desc='nodesc', nrls) {
     let {priv, pub} = await CRYPTO.generateKeyPair();
+    console.log('C2', {priv, pub});
     priv = await CRYPTO.exportPrivateKey(priv);
+    console.log('C3');
     pub = await CRYPTO.exportPublicKey(pub);
+    console.log('C4');
     //console.log({priv,pub});
 
     const signerId = await createSignerIdAsync({pub});
@@ -160,7 +163,7 @@ export async function generateNoteAsync({prev, text, ms=Date.now(), signerId, pu
         signerId
     };
 
-    // add noteId
+    // add noteID
     note.noteId = await generateNoteIdAsync(note);
 
     // add signature

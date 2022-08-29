@@ -1,7 +1,7 @@
 //const consoleLog = console.log; console.log = function() { console.trace(...arguments); };
 
 const DEBUG = true; // should be true during development to reduce bugs. should be false in production.
-console.info('utils.js running in debug mode');
+if(DEBUG) console.info('utils.js running in debug mode');
 
 // ------------ ASYNC FRIENDLY
 // itterating over async return values often result in

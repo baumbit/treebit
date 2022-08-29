@@ -958,35 +958,82 @@ Steps
         //     //       add rest button from Peer page in menu, i.e. reset relation with this peer
         //     //       a node should be able to tell peer that it should reset lists like tracked, sent notes etc)
         //     //           this way a node can recover locally lost data by recynking from start
->        add share node dialog
-            //fix: fix protocol empty see console todo
-            // add deep link to auto-connect node that is sharing
-            //    how to pass on url params to the refresh session thing and stuff
-            //        where is it setting the node url after the refresh???
-            //add link to hotel
+        //add share node dialog
+        //    //fix: fix protocol empty see console todo
+        //    // add deep link to auto-connect node that is sharing
+        //    //    how to pass on url params to the refresh session thing and stuff
+        //    //        where is it setting the node url after the refresh???
+        //    //add link to hotel
+        //add TREEBIT.md and link to from README.md
+        //make sure everything works in TOR Browser
+        //     //fix: crypto (console.log to trace what goes wrong)
+        //    replace pkcs8 with jwk
+        //        create new functions using JWK and test on module loading
+        //            base64 to json, json to base64
+        //        when the functions work, invoke these instead of the old ones
         small fixes:
-            fix: widen the size of window for when downloading new comments, to improve scrolling experience
-            fix: scrolling on home page (and other pages too) locks on mobile
-            fix: scrolling in share modal locks scrolling
-            fix: buttons in node profile "node can be reached on" does not respond
-            fix: missing ":" on node nrls on node profile page
-            fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
-            fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
-            add: feeds, topmost signer
-            add: feed: topmost notes (already added?)
-            fix: sometimes you need to click twice on a button before click is registered
-            fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
-            fix: new infoToast not replacing old (reproduce in cabinetadd on priv storage selection)
-            fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
-            fix: the text is cut of on notes and on help screen. its probably the scroll list rendering it with a margin + maybe some more stuff
             //  add: delete cabinet signer button
             //      if its default, this will require update of the cabinet.js page.
             //            easiest is to just update all res (using force) on client when delete action is done, to reflect changes
             //add: proper node urls in signer detail (when creawting new signer)
             //fix: note header displays incognito even when signer has a name
-        walkthough ALL treehut pages and ensure that
-             has all required features
-             looks good
+            //fix: auto re-index database
+            //    //add parcel
+            //    //    //fix: tests related to size
+            //    //    //fix: testSpeed does not appear to work when launching first time
+            //    //    //fix: testRandom
+            //    //add testRebuild
+            //    //    add: rebuild feature to bucketdb mediums
+            //    //        "loop through folder and rename all .bck files to .bck_old
+            //    //        "then maybe build some index of hits?!
+            //    //verify all tests enabled
+            //fix: use of array maps etc in bucketdb (enable debug in utils.js)
+            //fix: scroll wheel in TOR browser
+            //fix: tree page: widen the size of window for when downloading new comments, to improve scrolling experience
+            //fix: infinte page: increase number of items to download at once
+            //            // its impossible to know if there are more items below, so always asking to extend the array
+            //            // using the index at the end of array. same is kind of true for items above (-1 or lower)
+            //            // however:
+            //            //      the data downloaded from server is binded to the graphical item so when the graphical
+            //            //              items is destroyed the res will be removed
+            //            //       for some reason the home.js arr is emptied
+            //            //fix: home.js addFeedArr somehwere when scrolling and no content is downlpoaded arr is emptied for some reason
+            //            //          also for some reason when 2 items remains, for some reason getItem index 3 is never queried...
+            //            //              maybe because item 2 was never in array
+            //            fix: tail bounce top
+            //fix: infinte list: widen the size of indow for when downloading new comments, to improve scrolling experience
+>            update: TREEBIT.md, de-emphasize spam and emphasize GUI navigation
+                    TREEBIT: decentralized, anonymous AND public. negatives of decenralizastion used to filter which is positive
+                    owning data is NOT being able to prevent other people from reading it, it is preventing other people from being able to take it from you
+                    privact / anonymoity is NOT same as not being public
+                    nothing can prevent you from leaking data, therefor it will never be protected against getting public
+            change: move tree left/right bubbles to parent
+            add: zip script, API and download
+            add: gitignore _secret...
+            install.md
+                add: TOR will start automatically comment
+                fix: "Install TOR": brew install TOR not openssl
+                add: how to start in install.md but make sure information is not duplicated in readme.md
+            add tree.js: batch download of cards
+                        temporarily change REMOVE values to 0
+                        increase download nbr items
+                        enable REMOVE valies again
+            fix: missing ":" on node nrls on node profile page
+            fix: buttons in node profile "node can be reached on" does not respond
+            fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
+            fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
+            fix: scrolling on home page (and other pages too) locks on mobile
+            fix: scrolling in share modal locks scrolling
+            add: feeds, topmost signer
+            add: feed: topmost notes (already added?)
+            fix: sometimes you need to click twice on a button before click is registered
+            fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
+            fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
+            add: DEV mode on page, to make sure that shows
+       bin/launch.sh
+            update: add a "simple startup" that autofills everything and startsyp
+            add: wizard / add mode
+        make sure building with PROD creates wizard comments, while DEV creates templates
         make sure µ.config has correct values
                 resource continous polling should be enabled
                 make sure this works:
@@ -1008,10 +1055,33 @@ Steps
             //    progress bar for when adding a peer... create some sort of polling for state of adding new peer
             //    should be possible to add peer by inputing url somewhere...
             //    should be possible to add peer by visiting link in (followed) Signer profile
+            download project from github and create clean project from start to verify that everything works
         DoD:
             able to run two different hotels (on different machines) and exchange data across peers on different hotels
-
-    MVP:
+    MVP (this list is un-ordered, order it before starting)
+        add: openssl wrapper to handle errors
+        add: use input hint for "Enter password" when empty
+        add: share wizard. hotel hosts a a share wizard that figures out if invited friends is browsing using an android or iphone, dekstop etc
+                    and then shows the appropriate share information for that context (example if on andorid, try opening treebit app on device usong schema (PWA supports it too) 
+                    on desktop ask user if they have a treebit node or if they want to create new hotel account
+                    similar to how TOR browwser download page looks: big DOWNLOAD button at top, then the difference devices listed below
+             also when sharing node, add signer= to node share link, so that invited user also starts following faovourite signer
+        fix: the text is cut of on notes and on help screen. its probably the scroll list rendering it with a margin + maybe some more stuff
+        fix: new infoToast not replacing old (reproduce in cabinetadd on priv storage selection)
+        add: followed signers can be color tagged ("you" should also be color tagged)
+        add: create signer wizard when starting app first time... pre-filled with node user name
+                "You need to create a signer to post content"
+                Show at least 2 pre-filled signers:
+                    "First signer": <same as user name on node>
+                    "Second:" Incognito-randomnumber"
+                    + sign to add more
+        move: node profile and cabinet to advanced
+        fix: help pages are to white
+        fix: prevent page drag when input fields have focus
+        fix: save buttons  (and other confirms) should be (not be green) be WHITE but pulsating
+        add: pre-populated app with content and connect to peers with content 
+        add arrows pointing to horizontally scrollable comments the first time
+            requires startup guide mode
         add destroy peers that under-perform (upload-manager.js)
                     // maybe if to little quota to many times, then destroy it or something like that
                 ensure "pinned" peers are never destroyed
@@ -1083,7 +1153,8 @@ Steps
             create proper share dialog (refactor the one from NodeProfile page and make standalone)
                 make sure its available from many places
         scrollable page
-            add scroll indicator so you know you can scroll
+            fix: slow scrolling in TOR browser. guessing its the interpolation because dragging with mouse on Node profile page is OK
+            add: scroll indicator so you know you can scroll
         resource-api
                 make a list of which endpints are never used and uncomment them (create an array where path are added on setyp, removed on invocation)
         harden
@@ -1122,6 +1193,7 @@ Steps
             update example-webpage to work with bootloader
 
     PRE-ALPHA
+        resarch keet.to and invsetigate if its easy to create a spaces of it
         password protect private key stored on server (prevent against leaks/hacking etc)
         ensure that all res/ are server rendered correctly
                 signer-name.js is prime example

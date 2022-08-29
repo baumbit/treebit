@@ -88,11 +88,11 @@ function fixAsync(revealed) {
                 return f(...arguments);
             });
         };
-           o[k] = function() {
-               console.log('DEPRECATED');
-               console.trace();
-               return f(...arguments);
-           };
+        o[k] = function() {
+            //console.log('DEPRECATED');
+            //console.trace();
+            return f(...arguments);
+        };
     });
     if(Object.keys(o).length) {
         revealed['async'] = o;

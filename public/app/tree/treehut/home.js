@@ -32,7 +32,8 @@ export function Home({oo, $, res}, {active}) { //console.log('active:', active);
 };
 
 
-export function addFeedArr(srcArr=[], addArr, reverse) { //console.log('reverse='+reverse, srcArr, addArr);
+export function addFeedArr(srcArr=[], addArr, reverse) {
+    console.log('addFeedArr being', {srcArr, addArr, reverse});
     const key = addArr[0];
     const srcIndex = srcArr.indexOf(key);
     if(srcIndex === -1) {
@@ -46,6 +47,7 @@ export function addFeedArr(srcArr=[], addArr, reverse) { //console.log('reverse=
         }
     }
     const arr = reverse ? addArr.concat(srcArr) : srcArr.concat(addArr); //console.log(arr);
+    console.log('addFeedArr end', {srcArr, addArr, arr});
     return arr;
 };
 // TEST: begin
@@ -77,23 +79,32 @@ function createFeedList({oo, css, go, $, res, setres}, activeIndex) {
     const ARR = feedPath + '/arr';
 
     let arr = $(ARR) || [];
-    let isDownloading;
+    let isDownloadingTop, isDownloadingBottom;
     let list;
 
-    const downloadFeed = (index=0, forceDownload) => {
-        if(isDownloading && !forceDownload) return;
-        isDownloading = true;
+    const downloadFeed = (index=0, forceDownload) => { //console.log({index, forceDownload});
         const reverse = index < 0;
-        const key = reverse ? arr[0] : arr[arr.length]; //console.log({index, key, reverse});
-        oo.res(resPath + `?key=${key}&reverse=${reverse}`, {save:false}, ({error, data}) => {
+        if(reverse) {
+            if(isDownloadingTop || !forceDownload) return;
+            isDownloadingTop = true;
+        } else {
+            if(isDownloadingBottom || !forceDownload) return;
+            isDownloadingBottom = true;
+        }
+
+        const key = reverse ? arr[0] : arr[arr.length-1]; console.log({index, key, reverse, arr});
+        const path = resPath + `?key=${key}&reverse=${reverse}`;
+        console.log('download res', path);
+        oo.res(path, {save:false}, ({error, data}) => {   //console.log('downloaded data', data);
             if(!error) {
                 arr = addFeedArr(arr, data.list, data.reverse);
-                $.set(ARR, arr);
+                $.set(ARR, arr); console.log({ARR, arr});
                 arr = $(ARR);
                 if(list) list.requestRender();
             }
             oo.timer(3000, () => { // prevent spam
-                isDownloading = false;
+                if(reverse) isDownloadingTop = false;
+                else isDownloadingBottom = false;
             });
          });
     };
@@ -105,7 +116,9 @@ function createFeedList({oo, css, go, $, res, setres}, activeIndex) {
     list = createList(oo,
         (index) => { //getItem,
             const item = arr[index];
-            if(!item) { // optmz: faster to check if item is falsy, instead of index within bounds.
+            //console.log('getItem:', index, arr, '->', !!item);
+            if(!item) { // optmzd: faster to check if item is falsy, instead of index within bounds.
+                //console.log('download more data', arr.length, index, !!item);
                 downloadFeed(index);
             }
             return item;

@@ -85,6 +85,11 @@ export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, rende
         }
     });
 
+    oo.onDestroy(() => {
+        //console.log('destroying note', noteId);
+        //console.log('card:', oo.$(`res/card/note/${noteId}?sort=bubble`));
+    });
+
     oo.x([
         function getLeftNoteId() {
             return cardHeader.getLeftNoteId();

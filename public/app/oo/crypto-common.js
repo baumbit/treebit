@@ -80,22 +80,70 @@ function ab2str(buf) {
     return String.fromCharCode.apply(null, new Uint8Array(buf));
 }
 
-async function exportCryptoKey(format, key, isBase64=true) { //console.log('exportCryptoKey', format);
+async function exportCryptoKey(format, key, isBase64=true) { //console.log('exportCryptoKey', {format, key});
     const
         exported = await getSubtle().exportKey(format, key),
         exportedAsString = ab2str(exported);
     return isBase64 ? getBase64().btoa(exportedAsString) : exportedAsString;
 }
 
-export async function exportPrivateKey(priv, isPEM) {
-    const base64 = exportCryptoKey('pkcs8', priv);
-    return isPEM ? `-----BEGIN PRIVATE KEY-----\n${base64}\n-----END PRIVATE KEY-----` :  base64;
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+export async function keyAsCoy(key, isBase64=true) {
+    const exported = await getSubtle().exportKey('jwk', key);
+    const stripped = {
+        d: exported.d,
+        x: exported.x,
+        y: exported.y
+    };
+    //console.log({exported});
+    const exportedAsString = JSON.stringify(exported);
+    return isBase64 ? getBase64().btoa(exportedAsString) : exportedAsString;
 };
+async function coyAsKey(key, type) {
+    const keyAsString = getBase64().atob(key);
+    const strippedKey = JSON.parse(keyAsString);
+    let key_ops = [];
+    if(type === 'priv') key_ops.push('sign');
+    if(type === 'pub') key_ops.push('verify');
+    const jwkKey = {
+        ...strippedKey,
+        crv: 'P-384',
+        kty: 'EC',
+        ext: true,
+        key_ops
+    };
+    //console.log({jwkKey});
+    const result = await getSubtle().importKey(
+        'jwk',
+        jwkKey,
+        {
+            name: "ECDSA",
+            namedCurve: 'P-384'
+        },
+        true,
+        key_ops
+    );
+    //console.log('----------done import');
+    return result;
+}
+
+
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////77
+export async function exportPrivateKey(priv) {
+    return keyAsCoy(priv, 'priv');
+};
+//export async function exportPrivateKey(priv, isPEM) {
+//    const base64 = exportCryptoKey('pkcs8', priv);
+//    return isPEM ? `-----BEGIN PRIVATE KEY-----\n${base64}\n-----END PRIVATE KEY-----` :  base64;
+//};
 
 export async function exportPublicKey(pub, isPEM) {
-    const base64 = exportCryptoKey('spki', pub);
-    return isPEM ? `-----BEGIN PUBLIC KEY-----\n${base64}\n-----END PUBLIC KEY-----` : base64;
+    return keyAsCoy(pub, 'pub');
 };
+//export async function exportPublicKey(pub, isPEM) {
+//    const base64 = exportCryptoKey('spki', pub);
+//    return isPEM ? `-----BEGIN PUBLIC KEY-----\n${base64}\n-----END PUBLIC KEY-----` : base64;
+//};
 
 function str2ab(str) {
     const buf = new ArrayBuffer(str.length);
@@ -107,9 +155,10 @@ function str2ab(str) {
 }
 
 async function importCryptoKey(format, key, arr, isBase64=true) {
-    const binaryDerString = isBase64 ? getBase64().atob(key) : key;
-    const binaryDer = str2ab(binaryDerString); //console.log('so far so good', s, binaryDerString);
-    //console.log('asd', {format, key, arr, isBase64});
+    const binaryDerString = isBase64 ? getBase64().atob(key) : key; //console.log('importCryptoKey');
+    const binaryDer = str2ab(binaryDerString); //console.log('so far so good', binaryDerString);
+    //console.log('importCryptoKey', {format, key, arr, isBase64});
+    const subtle = getSubtle(); //console.log('get subtle=', subtle, {format, binaryDer, arr});
     const result = await getSubtle().importKey(
         format,
         binaryDer,
@@ -123,20 +172,24 @@ async function importCryptoKey(format, key, arr, isBase64=true) {
     return result;
 }
 
+//export async function importPublicKey(pub) {
+//    //const pemHeader = "-----BEGIN PUBLIC KEY-----";
+//    //const pemFooter = "-----END PUBLIC KEY-----";
+//    //const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
+//    return importCryptoKey('spki', pub, ['verify']);
+//};
 export async function importPublicKey(pub) {
-    // TODO
-    //const pemHeader = "-----BEGIN PUBLIC KEY-----";
-    //const pemFooter = "-----END PUBLIC KEY-----";
-    //const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    return importCryptoKey('spki', pub, ['verify']);
+    return coyAsKey(pub, 'pub');
 };
-
+//
+//export async function importPrivateKey(priv) {
+//    //const pemHeader = "-----BEGIN PRIVATE KEY-----";
+//    //const pemFooter = "-----END PRIVATE KEY-----";
+//    //const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
+//    return importCryptoKey('pkcs8', priv, ['sign']);
+//};
 export async function importPrivateKey(priv) {
-    // TODO
-    //const pemHeader = "-----BEGIN PRIVATE KEY-----";
-    //const pemFooter = "-----END PRIVATE KEY-----";
-    //const pemContents = pem.substring(pemHeader.length, pem.length - pemFooter.length);
-    return importCryptoKey('pkcs8', priv, ['sign']);
+    return coyAsKey(priv, 'priv');
 };
 
 export async function generateEncryptionKeyPairAsync() {
@@ -255,4 +308,32 @@ export async function decryptAsync(priv, ciphertext) { //console.log('decrypt', 
 //    assertEncDec('hello world');
 //})();
 
+// --- TODO test after setyp
+//    try{
+//setTimeout(() => {
+//(async () => {
+//
+//    // TODO
+//    //      test this in tor browser
+//    //      if it works, replace all invocations of this for priv/pub
+//
+//
+//    const {priv, pub} = await generateKeyPair();
+//    //console.log({priv, pub});
+//
+//    console.log('-----------PRIV ----------');
+//    const b64Priv = await keyAsCoy(priv, 'priv');
+//    //console.log('priv:', {b64Priv});
+//    const iPriv = await coyAsKey(b64Priv, 'priv');
+//    console.log('imported priv key', {iPriv});
+//    console.log('-----------PUB ----------');
+//    const b64Pub = await keyAsCoy(pub, 'pub');
+//    //console.log('pub:', {b64Pub});
+//    const iPub = await coyAsKey(b64Pub, 'pub');
+//    console.log('imported pub key', {iPub});
+//
+//
+//})();}, 2000); } catch(e) {
+//    console.log(e);
+//}
 

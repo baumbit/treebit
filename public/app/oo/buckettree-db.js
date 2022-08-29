@@ -24,6 +24,13 @@ const version = '0.0.27';
 //                  so no need for a timer)
 //
 //      known possible optimzations:
+//          rebuild:
+//              hash of key is stored in parcel, so buckets is not really needed!
+//              this depends on a safe way to parse out what is value and what is parcel in a .dat file,
+//              which is more complicated then it seems, because parcel values could be crafted by someone evil to look like
+//              parcel meta data and if .dat file is corrupted, this value could be misstaken for a parcel. its possible to
+//              work around this by obfuscating the parcel value, but fetching values from database would be slower.
+//
 //          known ~x2 speed improvement while preserving lufo bytes size limit:
 //              to reduce latency, you want to cache buckets in memory bucketLufo,
 //              but you also want to set a max-size for the lufo, and hence buckets needs 
@@ -49,7 +56,7 @@ const version = '0.0.27';
 //                        minor: bubbling data to a parent wont work
 //
 //          garbage collection:
-//              optimize loadDataAsync by opening a stream from file
+//              optimize loadParcelAsync by opening a stream from file
 
 import { createLufo, createStorageLufo, createCachedStorageLufo } from './lufo.js';
 
@@ -207,9 +214,9 @@ const common = {
         for(let p in bucketDescriptor) {
             let d = bucketDescriptor[p];
             if(!moveToChildFromBucket[d.key]) {
-                // TODO optimize loadDataAsync by opening a stream
-                let data = await medium.loadDataAsync({name}, d); // load from dirty data file
-                await common.saveDataAsync(bucket, d, data, d.size, false, false, dataFile.write, bucketMaxBytes, debugLog); // append
+                // TODO optimize loadParcelAsync by opening a stream
+                let parcel = await medium.loadParcelAsync({name}, d); // load from dirty data file
+                await common.saveParcelAsync(bucket, d, parcel, d.size, false, false, dataFile.write, bucketMaxBytes, debugLog); //append
                 bucket.descriptor[d.key] = d; // add descriptor to parent
             }
         }
@@ -228,8 +235,8 @@ const common = {
         // simple append descriptor from child to parent
         for(let p in moveToBucketFromChild) {
             let d = moveToBucketFromChild[p];
-            let data = await medium.loadDataAsync(child, d);
-            await common.saveDataAsync(bucket, d, data, d.size, false, false, dataFile.write, bucketMaxBytes, debugLog);
+            let parcel = await medium.loadParcelAsync(child, d);
+            await common.saveParcelAsync(bucket, d, parcel, d.size, false, false, dataFile.write, bucketMaxBytes, debugLog);
             bucket.descriptor[d.key] = d; // add descriptor to parent
             common.deleteDescriptor(child, d); // remove from child
         }
@@ -244,8 +251,8 @@ const common = {
                                               debugLog?.push(`move items from bucket:${name} to:${child.name}:${child.size.real}`);
         for(let p in moveToChildFromBucket) {
             let d = moveToChildFromBucket[p];
-            let data = await medium.loadDataAsync({name}, d); // load from the old dirty data file which the descriptor is mapping to.
-            await common.saveDataAsync(child, d, data, d.size, false, false, childDataFile.write, bucketMaxBytes, debugLog); // 
+            let parcel = await medium.loadParcelAsync({name}, d); // load from old dirty data file which the descriptor is mapping to.
+            await common.saveParcelAsync(child, d, parcel, d.size, false, false, childDataFile.write, bucketMaxBytes, debugLog); // 
             child.descriptor[d.key] = d; // add descriptor to child
             // no need to remove descriptor from parent,
             // since it was never included during the garbage collection above.
@@ -256,10 +263,13 @@ const common = {
 
         return 2; // garbage collecte and bucket sorted
     },
-    saveDataAsync: async (bucket, descriptor, data, size, isReplace, isHit=true, write, bucketMaxBytes, debugLog) => {
-        if(typeof data !== 'string') throw new Error('data must be a string');
+    saveParcelAsync: async (bucket, descriptor, parcel, size, isReplace, isHit=true, write, bucketMaxBytes, debugLog) => {
+        if(typeof parcel !== 'string') {
+            //console.log(parcel);
+            throw new Error('parcel must be a string');
+        }
 
-        const p = /*no need to block*/ write(data, debugLog);
+        const p = /*no need to block*/ write(parcel, debugLog);
 
         if(isReplace) {                                             debugLog?.push(`replace. new size: ${size}`);
             bucket.size.virtual -= descriptor.size;
@@ -326,7 +336,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         safuFileName = `${path}/SAFU`,
         // TODO when all test cases works... impl promisified read/write file
         //{ readFile, writeFile, access, rm, open, appendFile, rename } = nodejs.fsPromises,
-        { access, rm, open, appendFile, rename, stat, mkdir } = nodejs.fsPromises,
+        { access, rm, open, appendFile, rename, stat, mkdir, readdir } = nodejs.fsPromises,
         { constants, readFile, writeFile, writeFileSync } = nodejs.fs;
         //{ constants } = nodejs.fs;
 
@@ -342,7 +352,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         return `${path}/${name}.bck`;
     }
 
-    async function startAsync() {                           //console.log('startAsync', path);
+    async function startAsync() {                           console.log('startAsync', path);
         try {
             await stat(path);                               //console.log('found db dir', path);
         } catch(e) {
@@ -350,18 +360,84 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
             return;
         }
 
+        if(await pathExistsAsync(safuFileName)) {
+            await deleteSafuFileAsync();
+        } else {
+            throw 'rebuild';//new Error(`missing SAFU file. rebuild database(${path}) required`);
+        }
+        ////try {
+        ////    //const a = await stat(safuFileName);             //console.log('stat ok, will try to delete', safuFileName, !!a);
+        ////    const a = await parse             //console.log('stat ok, will try to delete', safuFileName, !!a);
+        ////    await deleteSafuFileAsync();                         //console.log('del ok', safuFileName);
+        ////} catch(e) {
+        ////    if(options.rebuild) await rebuildAsync();
+        ////    else throw new Error(`missing SAFU file. rebuild database(${path}) required`);
+        ////}
+    }
+
+    async function pathExistsAsync(s) {
         try {
-            const a = await stat(safuFileName);             //console.log('stat ok, will try to delete', safuFileName, !!a);
-            await deleteSafuFile();                         //console.log('del ok', safuFileName);
+            console.log('checking if path exists', s);
+            const a = await stat(s);
+            console.log('true, path exists', s);
+            return true;
         } catch(e) {
-            //console.error(e);
-            throw new Error(`re-indexing required for database(${path})`);
+            console.log('false, path do not exists', s);
+            return false;
         }
 
     }
 
-    async function deleteSafuFile() {
-        await rm(safuFileName);
+    async function rebuildAsync(db) {
+        // prepare
+        const workbenchPath = path + '-rebuild-' + Date.now();
+        await rename(path, workbenchPath); //console.log('created temporary workbench', {path, workbenchPath});
+        const files = await readdir(workbenchPath);
+        await db.clearDbAsync();
+        // move old data to new database
+        for(let bucketName of files) {
+            let bufferSize = 10,//0 * MBFactor,
+                pos = 0;
+            bucketName = workbenchPath + '/' + bucketName;
+            if(bucketName.endsWith('.bck')) { //console.log({bucketName});
+                let bucket;
+                try {
+                    bucket = await parseFileAsync(bucketName); //console.log(bucket);
+                } catch(e) {
+                    console.error(e);
+                }
+                if(bucket) {
+                    let dataName = workbenchPath + '/' + bucket.name + '.dat';
+                    let file;
+                    try {
+                        file = await randomAccessFileAsync(dataName);
+                    } catch(e) {
+                        console.error(e);
+                    }
+                    if(file) {
+                        let descs = Object.values(bucket.descriptor);
+                        for(let i = 0; i < descs.length; i++) {
+                            let descriptor = descs[i],
+                                { key, size, pos } = descriptor;
+                            try {
+                                let s = await file.readAsync(size, pos);
+                                let parcel = JSON.parse(s); //console.log('copying', key, parcel.v);
+                                db.setAsync(key, parcel.v);
+                            } catch(e) {
+                                console.error(e);
+                            }
+                        }
+                        file.close(); //console.log('loadParcelAsync', {size, pos, fileName, s, isParse});
+                    }
+                }
+            }
+        }
+        // cleanup
+        await deleteFileAsync(workbenchPath); //console.log('deleted workbenchPath', {workbenchPath});
+    }
+
+    async function deleteSafuFileAsync() {          console.log('deleteSafuFileAsync', {safuFileName});
+        return rm(safuFileName);
     }
 
     function stopBlocking() {
@@ -369,7 +445,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         overwriteFileBlocking(safuFileName, `${Date.now()}`);
     }
 
-    async function deleteFileAsync(fileName) {
+    async function deleteFileAsync(fileName) { //console.log('deleteFileAsync', fileName);
         try {
             await rm(fileName, {recursive:true});
         } catch(e) {
@@ -408,14 +484,17 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         await deleteFileAsync(path);
     }
 
-    async function loadBucketAsync(name) { //console.log('loadBucketAsync', name);
+    async function parseFileAsync(fileName) {
         return new Promise((res, rej) => {
-                const fileName = buildBucketFileName(name);
                 readFile(fileName, (err, data) => {
                     if(err) rej(err);
                     else res(JSON.parse(data));
                 });
         });
+    }
+
+    async function loadBucketAsync(name) { //console.log('loadBucketAsync', name);
+        return parseFileAsync(buildBucketFileName(name));
         //const fileName = buildBucketFileName(name);
         //const data = await readFile(fileName);
         //let o;
@@ -440,7 +519,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         o.saved = Date.now();
         const fileName = buildBucketFileName(name);
         const data = JSON.stringify(o);
-        overwriteFileBlocking(fileName, data);
+        overwriteFileBlocking(fileName, data); //console.log('saveBucketBlocking', data);
         return o;
     }
 
@@ -468,6 +547,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         const stream = filehandle.createWriteStream({start});
         return {
             write: (data, debugLog) => {                            debugLog?.push(`write(${fileName}:${start}) data:${data}`);
+                //console.log('write', data);
                 stream.write(data);
             },
             close: () => {
@@ -477,7 +557,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         };
     }
 
-    async function readFileAsync(fileName) {
+    async function randomAccessFileAsync(fileName) {
         const filehandle = await open(fileName, 'r');
         return {
             readAsync: async (size, pos) => {
@@ -494,25 +574,27 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         };
     }
 
-    async function loadDataAsync(/*bucket*/{name}, descriptor, isClose) { //console.log('< loadDataAsync', ...arguments);
+    async function loadParcelAsync(/*bucket*/{name}, descriptor, isParse) { //console.log('< loadParcelAsync', ...arguments);
         const
             { size, pos } = descriptor,
             fileName = buildDataFileName(name), // same name as bucket, but different extension
-            file = await readFileAsync(fileName),
+            file = await randomAccessFileAsync(fileName),
             s = await file.readAsync(size, pos);
-        file.close(); //console.log('> loadDataAsync', {size, pos, fileName, s});
-        return s;
+        file.close(); //console.log('loadParcelAsync', {size, pos, fileName, s, isParse});
+        return isParse ? JSON.parse(s) : s;
     }
 
-    async function saveDataAsync(bucket, descriptor, data, size, isReplace, isHit, debugLog) {
+    async function saveParcelAsync(bucket, descriptor, parcel, size, isReplace, isHit, debugLog) {
         const fileName = buildDataFileName(bucket.name);            debugLog?.push(`fileName: ${fileName}`);
-        return common.saveDataAsync(
-            bucket, descriptor, data, size, isReplace, isHit,
-            async (data, debugLog) => {
-                await appendFile(fileName, data);                         debugLog?.push(`append(${fileName}): ${data}`);
+        const result = await common.saveParcelAsync(
+            bucket, descriptor, parcel, size, isReplace, isHit,
+            async (parcel, debugLog) => {
+                await appendFile(fileName, parcel);                         debugLog?.push(`append(${fileName}): ${parcel}`);
             },
             bucketMaxBytes, debugLog
         );
+        await loadParcelAsync(bucket, descriptor, true); //console.log('save done', {fileName});
+        return result;
     }
 
     function debugDumpDecorators(bucket) {
@@ -522,10 +604,10 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         });
     }
 
-    async function garbageCollectionAsync(garbageBucketName, db, debugLog) {
+    async function garbageCollectionAsync(garbageBucketName, db, debugLog) {    //console.log('garbageBucketName', garbageBucketName);
         return common.garbageCollectionAsync(garbageBucketName, db,
             {
-                rm, rename, writeFileAsync, loadDataAsync, saveDataAsync, buildDataFileName,
+                rm, rename, writeFileAsync, loadParcelAsync, saveParcelAsync, buildDataFileName,
                 buildBucketFileName, bucketMaxBytes, sortMs
             },
             debugLog
@@ -534,18 +616,19 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
     //console.log('b bucket desc size', Object.keys(bucket.descriptor).map(k => bucket.descriptor[k]).reduce((a, d) => a + d.size, 0));
 
     return {
+        rebuildAsync,
         stopBlocking,
         startAsync,
         clearDbAsync,
         dropDbAsync,
-        deleteSafuFile,
+        deleteSafuFileAsync,
         deleteBucketAsync,
         loadBucketAsync,
         saveBucketAsync,
         saveBucketBlocking,
         hasBucketAsync,
-        loadDataAsync,
-        saveDataAsync,
+        loadParcelAsync,
+        saveParcelAsync,
         garbageCollectionAsync,
         setExtraBlocking,
         getExtraAsync,
@@ -740,8 +823,6 @@ export async function createBucketTreeDbAsync(options) {
                 //console.log('will delete',name,'bucket. removing ',digit,'from parent bucket',parentName,deepClone(parentBucket));
                 delete parentBucket.children[digit];
                 await saveBucketAsync(parentBucket);
-                //console.log('2 parentBucekt in lufo -', parentBucket.name, deepClone(bucketLufo.getValue(parentBucket.name)));
-             //console.log('2 parentBucekt on disc -', parentBucket.name, deepClone(await medium.loadBucketAsync(parentBucket.name)));
             }
             analytic.bucket.del++;
             await medium.deleteBucketAsync(name);
@@ -799,7 +880,6 @@ export async function createBucketTreeDbAsync(options) {
             key,                    // used to identify this descriptor
             size,                   // bytes, size of stored data
             hits: 0,                // count storage read
-            type: null,             // data type
             pos: null
             // TODO lock: null,             // TODO set a random number when locked, unlock by submitting this number
             // TODO when everything else works, add this external: null          // stored alongside bucket file
@@ -834,15 +914,17 @@ export async function createBucketTreeDbAsync(options) {
         }, options);
     }
 
-    async function getOrAddDescriptorAsync(key, type, value, size, debugLog) {
+    async function getOrAddDescriptorAsync(isAdd, key, value, options, debugLog) {
         const stop = stopwatch('search');
 
         const
-            hash = hashcode(key),
-            isAdd = !!value;                                         debugLog?.push(`looking for key=${key} add=${isAdd}`);
+            hash = hashcode(key);                                         debugLog?.push(`looking for key=${key} add=${isAdd}`);
 
-        if(isAdd && size === undefined) {
-            size = getSize(value);
+        let parcel, size;
+
+        if(isAdd) {
+            parcel = JSON.stringify({h:hash, v:value});
+            size = getSize(parcel);
         }
 
         if(isAdd && size > bucketMaxBytes) {
@@ -934,11 +1016,8 @@ export async function createBucketTreeDbAsync(options) {
         }
 
         if(isBucketUpdated/*falsy only if item not found and not added*/) { //console.log('save', bucket, descriptor);
-            if(type) {
-                bucket.descriptor[key].type = type;
-            }
             if(isAdd) {                                             debugLog?.push(`saveData ${key} in bucket ${bucket.name}`);
-                await medium.saveDataAsync(bucket, descriptor, value, size, isFound, undefined, debugLog);
+                await medium.saveParcelAsync(bucket, descriptor, parcel, size, isFound, undefined, debugLog);
             }
             bucket = await saveBucketAsync(bucket);                 debugLog?.push(`saveBucket ${bucket.name}`);
         }
@@ -983,16 +1062,12 @@ export async function createBucketTreeDbAsync(options) {
     }
 
     async function setAsync(key, value, options={}, debugLog) {
-        let data;
-        const type = typeof value;
-        if(type !== 'string') data = JSON.stringify(value);
-        else data = value;
-        //console.log('setAsync', {hash, key, value});
+        //console.log('setAsync', {key, value});
         return addJob(async () => {
             const stop = stopwatch('set');
             analytic.item.set++;
             const
-                {bucket, descriptor} = await getOrAddDescriptorAsync(key, type, data, options.size, debugLog);
+                {bucket, descriptor} = await getOrAddDescriptorAsync(true, key, value, options.size, debugLog);
 
             if(descriptor) {
                 if(dataLufo) {
@@ -1033,7 +1108,7 @@ export async function createBucketTreeDbAsync(options) {
                 }
             }
             analytic.item.get++;
-            const {bucket, descriptor, log} = await getOrAddDescriptorAsync(key, undefined, undefined, undefined, debugLog);
+            const {bucket, descriptor, log} = await getOrAddDescriptorAsync(false, key, undefined, undefined, undefined, debugLog);
 
             if(CHECKS && bucket) checkBucketIntegrity(bucket, true);
 
@@ -1042,15 +1117,12 @@ export async function createBucketTreeDbAsync(options) {
                 if(options.has) {
                     return true;
                 }
-                let data = await medium.loadDataAsync(bucket, descriptor);
-                if(descriptor.type !== 'string') {
-                    data = JSON.parse(data);
-                }
+                const parcel = await medium.loadParcelAsync(bucket, descriptor, true); //console.log({parcel});
                 if(dataLufo) {
                     analytic.lufo.data.add++;
-                    dataLufo.add(descriptor.key, data, 'bubble', descriptor.size);
+                    dataLufo.add(descriptor.key, parcel.v, 'bubble', descriptor.size);
                 }
-                return data;
+                return parcel.v;
             }
         }, options);
     }
@@ -1062,7 +1134,7 @@ export async function createBucketTreeDbAsync(options) {
     async function deleteAsync(key, options={}, debugLog) {
         return addJob(async () => {
             const stop = stopwatch('del');
-            const {bucket, descriptor} = await getOrAddDescriptorAsync(key, undefined, undefined, undefined, debugLog);
+            const {bucket, descriptor} = await getOrAddDescriptorAsync(false, key, undefined, undefined, undefined, debugLog);
             if(bucket) { //console.log('deleteAsync', {bucket, descriptor});
                 let data;
 
@@ -1074,8 +1146,8 @@ export async function createBucketTreeDbAsync(options) {
                         debugLog?.push(`deleteAsync(${key}) removed from lufo`);
                         data = options.remove && cached.value;
                     } else if(descriptor && options.remove){
-                        data = await medium.loadDataAsync(bucket, descriptor);
-                        if(descriptor.type !== 'string') data = JSON.parse(data);
+                        const parcel = await medium.loadParcelAsync(bucket, descriptor, true);
+                        data = parcel.v;
                     }
                 }
                 analytic.item.del++;
@@ -1136,6 +1208,7 @@ export async function createBucketTreeDbAsync(options) {
                 index=1000,                 // max number of buckets to store in bucketLufo
                 cache=(10*MBFactor),        // byte size to store in dataLufo
                 sortMs=200,                 // max time spent on sorting
+                rebuild=true,               // if true, rebuild db if it was not shutdown correctly
                 path,                       // storage path
                 log
             } = options;
@@ -1161,7 +1234,16 @@ export async function createBucketTreeDbAsync(options) {
         if(cache > 1) setDataLufo( createLufo({maxSize:cache}) );
         log?.('startAsync', {version, sortMs, bytes, bucketMaxBytes, bucketGarbageMaxBytes, bucketMaxCount});
 
-        await medium.startAsync();
+        try {
+            await medium.startAsync();
+        } catch(e) {
+            if(e === 'rebuild' && rebuild) {
+                //if(e === 'rebuild') {
+                console.warn('WARNING! bucketdb had to rebuild the database. data might have been corrupted:', path);
+                await rebuildAsync();
+            }
+            else throw e;
+        }
 
         // since this function it using async functions,
         // state might have changed during startup process
@@ -1174,13 +1256,14 @@ export async function createBucketTreeDbAsync(options) {
         }
     }
 
-    if(options) {
-        await startAsync(options);
+    async function rebuildAsync() {
+        return medium.rebuildAsync(reveal);
     }
 
     const reveal = {
         clearDbAsync,
         dropDbAsync,
+        rebuildAsync,
         setAsync,
         getAsync,
         hasAsync,
@@ -1231,6 +1314,11 @@ export async function createBucketTreeDbAsync(options) {
             return o;
         }
     };
+
+    if(options) {
+        await startAsync(options, reveal);
+    }
+
     // offer an interface where you do not have to type Async
     return Object.keys(reveal).reduce((o, k) => {
         o[k] = reveal[k];
@@ -1245,7 +1333,7 @@ export async function createBucketTreeDbAsync(options) {
 
     let DEBUG = true, // <----- TRUE FOR LOG
         L = DEBUG ? console.log : () => {},
-        E = function() {console.error('test failed', ...arguments); console.trace(); },
+        E = function() {console.error('test failed', ...arguments); console.trace(); console.log('TEST FAILE - PROCESS TERMINATED!!!'); process.exit()},
         cntDb = 1,
         db, bucket, cnt;
 
@@ -1272,8 +1360,8 @@ export async function createBucketTreeDbAsync(options) {
         }
     } catch(e) {
         TEST_REGRESSION=true;
-        TEST_SPEED=false; // TODO impl this
-        TEST_RANDOM=false; // TODO impl this
+        TEST_SPEED=true;
+        TEST_RANDOM=true;
     }
     const memory = true;
     console.log(`test bucket-db memory(${!!memory}) file(${isTestFile}) regregssion(${TEST_REGRESSION}) speed(${TEST_SPEED}) random(${TEST_RANDOM})`);
@@ -1296,12 +1384,12 @@ export async function createBucketTreeDbAsync(options) {
         const self = {
             startAsync: () => {
                 if(file.SAFU === null) return;
-                else if(file.SAFU === false) throw new Error('re-index required');
+                else if(file.SAFU === false) throw new Error('rebuild required');
             },
             stopBlocking: () => {
                 file.SAFU = true;
             },
-            deleteSafuFile: () => {
+            deleteSafuFileAsync: () => {
                 file.SAFU = false;
             },
             clearDbAsync: () => {
@@ -1320,17 +1408,17 @@ export async function createBucketTreeDbAsync(options) {
             dropDbAsync: () => {
                 delete testMediumFiles[path];
             },
-            loadDataAsync: ({name}, descriptor) => {
+            loadParcelAsync: ({name}, descriptor, isParse) => {
                 const o = file[name+'_dat'];
                 if(o) {
                     const
                         s = o.str.slice(descriptor.pos, descriptor.pos + descriptor.size);
-                    return s;
+                    return isParse ? JSON.parse(s) : s;
                 }
             },
-            saveDataAsync: (bucket, descriptor, data, size, isReplace, isHit) => {
-                return common.saveDataAsync(bucket, descriptor, data, size, isReplace, isHit, (data) => {
-                    appendFile(bucket.name+'_dat').write(data);
+            saveParcelAsync: (bucket, descriptor, parcel, size, isReplace, isHit) => {
+                return common.saveParcelAsync(bucket, descriptor, parcel, size, isReplace, isHit, (parcel) => {
+                    appendFile(bucket.name+'_dat').write(parcel);
                 }, bucketMaxBytes);
             },
             //deleteDataAsync: (bucket, descriptor) => {
@@ -1350,8 +1438,8 @@ export async function createBucketTreeDbAsync(options) {
             },
             garbageCollectionAsync: (garbageBucketName, db, debugLog) => {
                 const
-                    loadDataAsync = self.loadDataAsync,
-                    saveDataAsync = self.saveDataAsync,
+                    loadParcelAsync = self.loadParcelAsync,
+                    saveParcelAsync = self.saveParcelAsync,
                     buildBucketFileName = (name) => name+'_bck',
                     buildDataFileName = (name) => name+'_dat',
                     writeFileAsync = appendFile,
@@ -1362,7 +1450,7 @@ export async function createBucketTreeDbAsync(options) {
                         file[to] = file[from];
                         delete file[from];
                     };
-                return common.garbageCollectionAsync(garbageBucketName, db, {rm, rename, writeFileAsync, loadDataAsync, saveDataAsync, buildDataFileName, buildBucketFileName, bucketMaxBytes, sortMs}, debugLog);
+                return common.garbageCollectionAsync(garbageBucketName, db, {rm, rename, writeFileAsync, loadParcelAsync, saveParcelAsync, buildDataFileName, buildBucketFileName, bucketMaxBytes, sortMs}, debugLog);
             },
             loadBucketAsync: (name) => {
                 const o = file[name+'_bck'];
@@ -1448,7 +1536,7 @@ export async function createBucketTreeDbAsync(options) {
             log = !log ? undefined : (log === true ? [] : log);
             const assertId = Math.random();
             const options = {assertId, key, method:'get'};
-            const o = await db.getAsync(key, options, log);
+            const o = await db.getAsync(key, options, log); //console.log({key, expected, o});
             let found = o;
             //try {
             //    found = JSON.parse(o);
@@ -1466,8 +1554,14 @@ export async function createBucketTreeDbAsync(options) {
             if(typeof bucket === 'string') bucket = await db.getBucketAsync(bucket);
             else bucket = await db.getBucketAsync(bucket.name);
             if(bucket.name !== expectedName) E('assertBucket failed name', bucket.name, {expectedName});
-            if(expectedVirtual !== undefined && bucket.size.virtual !== expectedVirtual) E('assertBucket failed size', bucket.size.virtual, {expectedVirtual});
-            if(expectedReal !== undefined && bucket.size.real !== expectedReal) E('assertBucket failed size', bucket.size.real, {expectedReal});
+            if(expectedVirtual !== undefined && bucket.size.virtual !== expectedVirtual) {
+                E('assertBucket failed size', bucket.size.virtual, {expectedVirtual});
+                process.exit();
+            }
+            if(expectedReal !== undefined && bucket.size.real !== expectedReal) {
+                E('assertBucket failed size', bucket.size.real, {expectedReal});
+                process.exit();
+            }
             const keysCount = Object.keys(bucket.descriptor).length;
             if(bucket.count !== keys.length || bucket.count !== keysCount) {
                 E('assertBucket failed key/count', 'count:', bucket.count, 'found', keysCount, 'expected:', keys.length);
@@ -1498,7 +1592,7 @@ export async function createBucketTreeDbAsync(options) {
             await assertValue('foo', {cnt:2});
 
             try {
-                await db.startAsync(options);
+                await db.startAsync({options});
                 isSuccess = false;
             } catch(e) {
                 isSuccess = true;
@@ -1528,14 +1622,14 @@ export async function createBucketTreeDbAsync(options) {
             //}
             //if(!isSuccess) E('assert failed, database should not be able to stop without being started first');
 
-            await db.getMedium().deleteSafuFile();
+            await db.getMedium().deleteSafuFileAsync();
             try {
-                await db.startAsync(options);
+                await db.startAsync({...options, rebuild:false});
                 isSuccess = false;
             } catch(e) {
                 isSuccess = true;
             }
-            if(!isSuccess) E('assert failed, database should not start if SAFU file is missing');
+            if(!isSuccess) E('assert failed, database should not start if SAFU file is missing and rebuild is false');
 
             await db.dropDbAsync();
             db = await createBucketTreeDbAsync(options);
@@ -1549,6 +1643,60 @@ export async function createBucketTreeDbAsync(options) {
             await assertValue('after', {foo:'after', cnt:5});
 
             db.stopBlocking(); // make sure stopping like this also works
+            await db.dropDbAsync();
+        }
+        async function testRebuild(createMedium, log) {
+            let isSuccess;
+            const
+                path = testBasePath + '/rebuild',
+                options = {path, createMedium};
+
+            cnt = 1;
+            db = await createBucketTreeDbAsync(); // open existing database
+            await db.startAsync(options); // start database
+            await add('bar');
+            await assertValue('bar', {cnt:2});
+            await db.stopAsync();
+            await db.getMedium().deleteSafuFileAsync();
+            try {
+                await db.startAsync({...options, rebuild:false});
+                isSuccess = false;
+            } catch(e) {
+                isSuccess = true;
+            }
+            if(!isSuccess) E('assert failed, database should not start if SAFU file is missing');
+            await db.dropDbAsync();
+
+            cnt = 1;
+            db = await createBucketTreeDbAsync(); // open existing database
+            await db.startAsync(options); // start database
+///            // TODO add more data to verify, more block etc
+            const arr = [];
+            for(let i = 0, item; i < 100; i++) {
+                item = {k: 'k'+i+'-'+Math.random(), v: {cnt:i}};
+                await add(item.k, item.v);
+                arr.push(JSON.parse(JSON.stringify(item)));
+            }
+            for(let i = 0; i < arr.length; i++) {
+                await assertValue(arr[i].k, arr[i].v);
+            }
+            await db.stopAsync();
+            await db.getMedium().deleteSafuFileAsync();
+            isSuccess = false;
+            try {
+                await db.startAsync({...options, rebuild:false});
+            } catch(e) {
+                if(e === 'rebuild') {
+                    await db.rebuildAsync();
+                    isSuccess = true;
+                }
+                else throw e;
+            }
+            if(!isSuccess) E('assert failed, unable to rebuild database');
+            for(let i = 0; i < arr.length; i++) {
+                await assertValue(arr[i].k, arr[i].v);
+            }
+            await db.stopAsync();
             await db.dropDbAsync();
         }
         async function testWithCountAsLimit(dbOptions, createMedium, bucketLufo, dataLufo, log) {
@@ -1679,7 +1827,7 @@ export async function createBucketTreeDbAsync(options) {
             await assertBucket(bucket,
                 ['a45', 'a46'],
                 [{cnt:1},{cnt:2}],
-                '9', 42, 42
+                '9', 78, 78
             );
             await add('a47');
             await add('a48');
@@ -1687,20 +1835,19 @@ export async function createBucketTreeDbAsync(options) {
             await assertBucket('94',
                 ['a47'],
                 [{cnt:3}],
-                '94', 21, 42
+                '94', 39, 78
             );
-            //L('update');
             await add('a45', {foo:'b45'}); // to big to fit in bucket9 so it will be moved
             await assertBucket('9',
                 ['a46'],
                 [{cnt:2}],
-                '9', 21, 42
+                '9', 39, 78
             );
             await db.garbageCollectionAsync('9');
             await assertBucket('9',
                 ['a46'],
                 [{cnt:2}],
-                '9', 21, 21
+                '9', 39, 39
             );
             await del('a46');
             await db.garbageCollectionAsync('9');
@@ -1708,14 +1855,14 @@ export async function createBucketTreeDbAsync(options) {
             await assertBucket(bucket,
                 ['a40'],
                 [{cnt:6}],
-                '9', 33, 33
+                '9', 51, 51
             );
             await del('a45');
             await hasBucket('948', false);
-
-            //log?.('jobQueue:', db.getQueue());
-            //log?.('bucket:', db.getMedium().dump().bucket);
-            //log?.('storage:', db.getMedium().dump().storage);
+////
+////            //log?.('jobQueue:', db.getQueue());
+////            //log?.('bucket:', db.getMedium().dump().bucket);
+////            //log?.('storage:', db.getMedium().dump().storage);
             await db.stopAsync();
             await db.dropDbAsync();
         }
@@ -1723,9 +1870,9 @@ export async function createBucketTreeDbAsync(options) {
         async function testSort(dbOptions, createMedium, bucketLufo, dataLufo, log) {
             log = DEBUG ? log : undefined;
             cnt = 0;
-            dbOptions.count = 4;
-            dbOptions.bytes = 100;
-            dbOptions.garbageBytes = 10;
+            dbOptions.count = 4; // test using count...
+            dbOptions.garbageBytes = 10; // ...and max allowed garbage
+            dbOptions.bytes = 100000;
             dbOptions.sortMs = Number.MAX_SAFE_INTEGER; // sort as much as possible
             dbOptions.createMedium = createMedium;
             db = await createDbAsync(dbOptions, log);
@@ -1737,21 +1884,25 @@ export async function createBucketTreeDbAsync(options) {
             // of using lufos mute. also hits only helps sorting
             // the database so its not that important
 
-            await add('a41'); await db.getAsync('a42'); // this will be replaced because is before 42 and thats how sorting works
+            const bucket9 = await add('a41'); await db.getAsync('a42'); // this will be replaced because is before 42 and thats how sorting works
             await add('a42'); // this is never retrieved, hence gets low hits
             await add('a43'); await db.getAsync('a43'); await db.getAsync('a43'); // gets most hits
-            await add('a44'); // will be deleted later so no need to give it hits
+            const bucket44 = await add('a44'); // will be deleted later so no need to give it hits
 
-            await add('a45'); await db.getAsync('a45'); await db.getAsync('a45'); // create 94
+            const bucket94 = await add('a45'); await db.getAsync('a45'); await db.getAsync('a45'); // create 94
+            await add('a46');
+            //console.log('b94', bucket94);
 
-            await add('a46'); 
-
+            //console.log('----pre del', bucket9);
             await del('a44'); // create garbage in 9
+            //console.log('pre garb', bucket9);
             await db.garbageCollectionAsync('9'); // 45 should replace 41
+            //console.log('post garb b9', bucket9);
+            //console.log('post garb b94', bucket94);
             await assertBucket('9',
                 ['a42', 'a43','a45'],
                 [{cnt:2},{cnt:3},{cnt:5}],
-                '9', 63, 63
+                '9', 117, 117
             );
             await add('a47');
             await add('a30');
@@ -1759,12 +1910,12 @@ export async function createBucketTreeDbAsync(options) {
             await assertBucket('9',
                 ['a42', 'a43','a45','a47'],
                 [{cnt:2},{cnt:3},{cnt:5},{cnt:7}],
-                '9', 84, 84
+                '9', 156, 156
             );
             await assertBucket('94',
                 ['a41', 'a46','a30','a31'],
                 [{cnt:1},{cnt:6},{cnt:8},{cnt:9}],
-                '94', 84, 84
+                '94', 156, 156
             );
             await del('a41');
             await del('a42');
@@ -1772,6 +1923,7 @@ export async function createBucketTreeDbAsync(options) {
             await del('a45');
             await del('a47');
             await db.garbageCollectionAsync('9'); // sort should work also with empty buckets
+
             await db.dropDbAsync();
         }
 
@@ -1942,13 +2094,14 @@ Analytic:`);
             // lifecycle
             if(memory) await testStartStopDrop(createTestMedium);
             if(isTestFile) await testStartStopDrop(createFileMediumAsync);
+            if(isTestFile) await testRebuild(createFileMediumAsync);
 
             // count
             if(memory) await testWithCountAsLimit(dbOptions, createTestMedium);
             if(isTestFile) await testWithCountAsLimit(dbOptions, createFileMediumAsync);
 
             // size
-            dbOptions.bytes = 43;
+            dbOptions.bytes = 93;
             if(memory) await testWithSizeAsLimit(dbOptions, createTestMedium);
             if(memory) await testWithSizeAsLimit(dbOptions, createTestMedium, createLufo(bucketLufo));
             if(memory) await testWithSizeAsLimit(dbOptions, createTestMedium, undefined, createLufo(dataLufo));
@@ -2032,6 +2185,17 @@ Analytic:`);
             }
 
             await runRandom({
+                label: 'bugfixes test remove it',
+                count:90, mb:10,
+                minDataBytes:2, maxDataBytes:100,
+                bucketSizeInPercent:10, garbageSizeInPercent:20,
+                bucketLufoCountInPercent:10, dataLufoCountInPercent:10,
+                lufo:false,
+                drop:false,
+                log: L
+            });
+
+            await runRandom({
                 label: 'many small items with big enough bucket to fit all',
                 count:900, mb:10,
                 minDataBytes:2, maxDataBytes:1000,
@@ -2075,16 +2239,16 @@ Analytic:`);
                 log: L
             });
 
-            //await runRandom({
-            //    label: 'dev: try to crash it',
-            //    count:10200, mb:undefined,
-            //    minDataBytes:100, maxDataBytes:200,
-            //    bucketSizeInPercent:2, garbageSizeInPercent:20,
-            //    bucketLufoCountInPercent:2, dataLufoCountInPercent:10,
-            //    lufo:true,
-            //    drop:true,
-            //    log: L
-            //});
+//////            //await runRandom({
+//////            //    label: 'dev: try to crash it',
+//////            //    count:10200, mb:undefined,
+//////            //    minDataBytes:100, maxDataBytes:200,
+//////            //    bucketSizeInPercent:2, garbageSizeInPercent:20,
+//////            //    bucketLufoCountInPercent:2, dataLufoCountInPercent:10,
+//////            //    lufo:true,
+//////            //    drop:true,
+//////            //    log: L
+//////            //});
        }
     } catch(e) {
         E(e);

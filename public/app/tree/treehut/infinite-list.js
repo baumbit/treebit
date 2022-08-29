@@ -7,12 +7,16 @@ import {createScrollHandler} from './scroll.js';
 
 export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
     let isRendering = false,
-        BOUNCE_TOP = startOffset - Y_MARGIN,
+        DOWN = 1,
+        UP = -1,
+        BOUNCE_TOP = startOffset - Y_MARGIN, // must be greater then topRemoveItem (i.e below topRemoveItem in GUI)
         //scrollAnchorY = 0,
         isResized = true,
         head = null,
         viewSize,
         viewHalf,
+        topRemoveItem,
+        bottomRemoveItem,
         createItem,
         startBound,
         endBound,
@@ -47,16 +51,27 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
     function init(f, isForceRender) { //console.log('init');
         clear();
         createItem = f;
+        //createItem = function() {
+        //    console.trace();
+        //    return f(...arguments);
+        //};
         const bounds = getBounds(oo); //console.log({bounds}, type);
         startBound = bounds.start;
         endBound = bounds.end; //console.log({startBound, endBound});
         viewSize = bounds.size;
         viewHalf = Math.floor(viewSize * 0.5);
+
+        topRemoveItem = Math.ceil(startBound - viewHalf);
+        bottomRemoveItem = Math.ceil(endBound + viewHalf);
+        //topRemoveItem = startBound - 100; // DEBUG
+        //bottomRemoveItem = endBound + 200; // DEBUG
+
         if(isForceRender) render(0);
         //console.log('bounds', {bounds});
     }
 
     let dragOffsetY = null;
+    let ignoreDragUp = null;
     function render(scrollPos=0, drag) {                                 //console.log('render', oo.isDestroyed, oo);
         if(oo.isDestroyed) return; // render may be invoked via requestAnimationFrame or similar.
         if(typeof scrollPos !== 'number') throw new Error('bad scrollPos:' + scrollPos);
@@ -68,7 +83,10 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
             //if(isResized) updateBound(head);
             updateBound(head);
             if(drag.drag) {
-                 if(!dragOffsetY) {
+                if(ignoreDragUp) {
+                    if(drag.down) return;
+                }
+                if(!dragOffsetY) {
                     dragOffsetY = Math.floor(head.pos - drag.y);
                 }
                 pos = drag.y + dragOffsetY;
@@ -76,16 +94,9 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
                 dragOffsetY = null;
                 pos = head.pos + scrollPos;
             }
+            ignoreDragUp = false;
+            //ignoreDragUp = null;
             const headBottom = pos + head.sizeBound; //console.log({headBottom}, head.sizeBound);
-
-            if(!head.next) {
-                if(headBottom < viewHalf && scrollPos < 0) {
-                    if(head.pos < BOUNCE_TOP || pos + head.sizeBound < BOUNCE_TOP) { //console.log('above BOUNCE_TOP has no next');
-                        scrollHandler.bounce();
-                        return;
-                    }
-                }
-            }
 
             if(pos > viewHalf) {
                 if(headBottom > endBound - endOffset) {
@@ -95,30 +106,45 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
             }
 
             if(headBottom < BOUNCE_TOP) {
-                if(!head.next && drag.drag) {
-                    scrollHandler.bounce();
+                //pos = head.next.pos + scrollPos; console.log('remove', headBottom, startOffset);
+                //if(dragOffsetY !== null) dragOffsetY += head.sizeBound;
+                if(headBottom < topRemoveItem) {
+                    //console.log('removing top');
+                    removeItem(head);
+                    // head was replaced, calc new offset
+                    if(dragOffsetY !== null) {
+                        if(!head) console.warn('no head!!!!!');
+                        dragOffsetY += head.sizeBound;
+                    }
                     return;
                 }
-                //pos = head.next.pos + scrollPos; console.log('remove', headBottom, startOffset);
-                if(dragOffsetY !== null) dragOffsetY += head.sizeBound;
-                removeItem(head);
-                return;
-            } else if(pos > startOffset) {
-                //if(head.index > 0) {
+            } else {
+                if(pos > startOffset) {
                     let item = obtainItem(oo, head.index - 1, null, head);
                     if(item) {
                         head = item;
-                        pos = pos - head.sizeBound - Y_MARGIN;
-                        //if(dragOffsetY !== null) dragOffsetY += head.sizeBound;
+                        //console.log(pos, head.sizeBound, Y_MARGIN);
+                        pos = pos - head.sizeBound - Y_MARGIN; //console.log(pos);
+                        if(dragOffsetY !== null) dragOffsetY -= head.sizeBound;
                     }
-                    //else console.log('nothing', head.index-1);
-                //}
+                }
             }
         }
         let o = head;
+        //if(o) console.log('head', o.pos, o);
 
-        let isOutsideRight = false; //console.log({pos, isOutsideRight});
+        //let isOutsideRight = false; //console.log({pos, isOutsideRight});
         while(o/* && i < 100*/) { //log({i, o, x}); i++;
+            let isTail = !o.next;
+            if(isTail) {
+                if(pos < BOUNCE_TOP) {
+                    if(drag.drag) {
+                        ignoreDragUp = true;
+                    }
+                    scrollHandler.bounce();
+                }
+            }
+
             //o.oo.elm.style.right = scrollY + 'px';
             //o.oo.elm.style.left = x + 'px';
             if(o.oo.elm) {
@@ -138,12 +164,19 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
                 }
             }
             o.pos = pos;
+
+                //if(!head.next && drag.drag) {
+                //    scrollHandler.bounce();
+                //    return;
+                //}
+
             //pos = pos + o.sizeBound + 50;                                    //console.log(pos > endBound, endBound);
             //pos = pos + o.sizeBound; // TODO delim + 50;                                    //console.log(pos > endBound, endBound);
             pos = pos + o.sizeBound + Y_MARGIN;                                    //console.log(pos > endBound, endBound);
-            if(pos > endBound) {
-                isOutsideRight = true;
+            //if(pos > endBound) {
+            if(pos > bottomRemoveItem) {
                 if(o.next) {                                            //console.log('remove from end of list');
+                    //console.log('remove bottom');
                     removeItem(o.next);
                 }
                 break;
@@ -152,12 +185,15 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
             } else {
                 o = obtainItem(oo, o.index + 1, o);                         //if(o) console.log('add to end of list', pos);
             }
+
         }
         isResized = true;
     }
 
     function removeItem(o) {
         if(o) {                                                          //console.log('REMOVE', o.index, o);
+            //console.log('remve', o.pos, o);
+            //console.trace();
             if(o === head) head = o.next;
             if(o.next) o.next.prev = o.prev;
             if(o.prev) o.prev.next = o.next;
@@ -189,9 +225,10 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
     }
 
     function obtainItem(oo, index, prev, next) {
-        //console.log('obtainItem', index, prev, next);
+        //console.trace();
         oo = createItem(oo, index, list);
-        if(oo) {
+        //console.log('obtainItem', index, prev, next, !!oo);
+        if(oo) { //console.log('obtainItem');
             //console.trace();
             const o = {oo};
             oo.elm.style.opacity = 0;

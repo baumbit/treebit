@@ -2845,7 +2845,13 @@ OO.scroll = (function(curr) {
 
     if(!OO.isNodeJs) {
         //const windowOnWheel = window.onwheel;
-        window.addEventListener('mousewheel', event => scroll(event), {passive:false});
+        window.addEventListener('wheel', (event) => {
+            //console.log('wheeler');
+            return scroll(event);
+        }, {passive:false});
+        //window.addEventListener('mousewheel', event => { console.log('scrollwheel');
+        //    return scroll(event);
+        //}, {passive:false});
         //window.onwheel = (event) => scroll(event);
     }
 
