@@ -1,7 +1,0 @@
-# File generated and updated automatically by tor.js
-SocksPort 9020
-DataDirectory /Users/rose/rose/treebit/treebit/_secret/9002/tor/data
-PublishHidServDescriptors 1
-DisableNetwork 0
-HiddenServiceDir /Users/rose/rose/treebit/treebit/_secret/9002/tor/onion-service/9021
-HiddenServicePort 80 127.0.0.1:9021
