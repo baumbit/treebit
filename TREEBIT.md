@@ -1,47 +1,18 @@
 # Treebit
 
 Cryptography is strongly associated with privacy, anonymity and secrecy.
-While users of Treebit can remain anonymous the focus of Treebit is on creating a public, fully transparent and secure open network.
+While users of Treebit can remain anonymous, the focus of Treebit is on creating a public, fully transparent and secure open network.
 The intended purpose is to provide a communication utility for society, that enables a stream of high quality information and the substrate for a healthy public dialog.
+
 
 ## Treebit
 A users can post a text snippet on Treebit, either as a reply to a previous post or as a new one.
 When posts are added like this, the content branches out exactly like a tree: the trunk is the first post and the branches, then grows out of the main trunk or of the smaller branches.
 Because the content is organised like a tree, a user browsing the content can scroll both vertically and horizontally.
-While the horizontall scrolling is maybe a little bit different compared to make other social media platforms, the core functionality is actually the same as all other social media.
-So what makes Treebit different and what problem is Treebit trying to solve?
+While the horizontall scrolling is maybe a little bit different compared to other social media platforms, the core functionality is actually the same as most social media.
 
 
-## The problem
-A major issue is plaguing internet based social networks: they are susceptible to spam.
-
-Arguably many of the common solutions to this problem, births a whole range of problems and questionable practises.
-
-But let's take if from the start.
-The problem is: there is no objective definition of spam.
-What to some is of importance, someone else will consider being off-topic or spam.
-Yet, somehow we must create an arbitrary filter anyway, otherwise communication will not be possible due to the information overload.
-
-The natural first defence against spam, is to demand that users create an accounts which the social network service provider then controls.
-While the provider can not control a user, the account itself can be controlled and thus the action of the user on the network.
-Hence the service is no longer only an enabler, but also a disabler.
-Oftentimes the ability to block, restrict or otherwise control the actions of a user, is outsourced to moderators.
-The moderators are then granted special privilege to uphold the rules governing the community.
-And through these kinds of means, spam can be limited.
-
-There are several downsides to this approach.
-Some of these are:
-The user is not longer in full control of the user account.
-Messages can be spoofed by the provider.
-A user can be shadow banned or be put in a digital prison.
-Content moderation is arbitrary and subject for endless debates.
-And much more.
-
-To sum it up.
-While everyone want the means to be able to post whatever content they themselves feel like, everyone prefers a moderated stream of high quality content. Basically the user wants to both have the cake and eat it too, because there is no solution to this paradox. Or is there?
-
-
-## The solution
+## Open protocol
 Treebit is just a protocol.
 Since it's a protocol, anyone can implement it in code and thus nobody can own other users accounts.
 Since no one can own the accounts, no one can control them or the network that is created by the participants.
@@ -50,7 +21,7 @@ However, the protocol is designed in such a way that the messages that most peop
 This is achieved by means of a crowd sourced scoring mechanism.
 All messages gets a score that serves the purpose of being a subjective local source of truth.
 Since value is subjective, one user might put a higher score on certain messages and another user might score differently.
-The network participants (here on after referred to as peers) exchanges these scores with oneanother.
+The network participants (here on after referred to as peers) exchanges these scores with one another.
 Those messages that all peers have given a high score, will be propagated first.
 In one group of peers, certain messages will be the most favoured.
 In another group of peers, other message will be those with the highest score.
@@ -65,8 +36,8 @@ The basic proposition is that: a user can post what ever the user wants, but onl
 
 
 #### Peer graph
-The most important filtering function is the peers your node is connecting too, because these are the sources for content.
-It's the most important filtering function, because the peers can only relay the conent they themselves have.
+The most important filtering function is the peers your node is connecting to, because these are the sources for content.
+It is the most important filtering function, because the peers can only relay the conent they themselves have.
 This implies that it is very important which peers your node is connected to.
 The more peers a node have, the less of a limiting factor is has.
 There is no protocol defined upper limit as to how many peers a node can connect to.

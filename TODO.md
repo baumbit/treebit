@@ -1002,11 +1002,11 @@ Steps
             //            //              maybe because item 2 was never in array
             //            fix: tail bounce top
             //fix: infinte list: widen the size of indow for when downloading new comments, to improve scrolling experience
->            update: TREEBIT.md, de-emphasize spam and emphasize GUI navigation
-                    TREEBIT: decentralized, anonymous AND public. negatives of decenralizastion used to filter which is positive
-                    owning data is NOT being able to prevent other people from reading it, it is preventing other people from being able to take it from you
-                    privact / anonymoity is NOT same as not being public
-                    nothing can prevent you from leaking data, therefor it will never be protected against getting public
+>           // update: TREEBIT.md, de-emphasize spam and emphasize GUI navigation
+            //        TREEBIT: decentralized, anonymous AND public. negatives of decenralizastion used to filter which is positive
+            //        owning data is NOT being able to prevent other people from reading it, it is preventing other people from being able to take it from you
+            //        privact / anonymoity is NOT same as not being public
+            //        nothing can prevent you from leaking data, therefor it will never be protected against getting public
             change: move tree left/right bubbles to parent
             add: zip script, API and download
             add: gitignore _secret...
