@@ -2,25 +2,25 @@ import {friendlySignerName} from './signer.js';
 import {Icon, Expander, Modal} from './tugs.js';
 import {friendlyDate} from '../../oo/utils.js';
 
-function transformNode(node) {
-    //binder.node = node; // TODO ???????????
-    //console.log('ipdate', noteId, node);
-    const
-        {siblings, note} = node,
-        nbrSiblings = siblings.length,
-        index = siblings.findIndex(o => note.noteId === o.noteId);
+//function transformNode(node) {
+//    //binder.node = node; // TODO ???????????
+//    //console.log('ipdate', noteId, node);
+//    const
+//        {siblings, note} = node,
+//        nbrSiblings = siblings.length,
+//        index = siblings.findIndex(o => note.noteId === o.noteId);
+//
+//    return {
+//        leftNoteId: siblings[index-1]?.noteId,
+//        rightNoteId: siblings[index+1]?.noteId,
+//        leftCount: index,
+//        rightCount: nbrSiblings - index - 1,
+//        //text: node.note.data.text,
+//        prev: node.note.data.prev
+//    };
+//}
 
-    return {
-        leftNoteId: siblings[index-1]?.noteId,
-        rightNoteId: siblings[index+1]?.noteId,
-        leftCount: index,
-        rightCount: nbrSiblings - index - 1,
-        //text: node.note.data.text,
-        prev: node.note.data.prev
-    };
-}
-
-export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, render, showSignerName}) {
+export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, onBinderUpdated}) {
     oo.css(`
     NoteCard {
         -webkit-transform: rotateZ(360deg);
@@ -48,28 +48,30 @@ export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, rende
 
     Notefooter {
         display: block;
-        height: 20px;
+        height: 25px;
     }
+
+
     `);
 
     const onClick = oo.xx('onClick');
 
     const CARD = res(`res/card/note/${noteId}?sort=bubble`);//, console.log);
-    const cardHeader = oo(CardHeader, {noteId, binder, swipe, showSignerName});
+    const cardHeader = oo(CardHeader);
 
     const noteBody = oo('Notebody')
         .on(CARD + '/text', (text, o) => {
-            o.text(text);
+            o.text(text + ' ' + noteId.substring(0, 6));
             //oo._._.style({opacity: 1});
             oo.bubble('resized');
         })
         .onclick(() => {
-            onClick(noteId)
+            onClick(noteId);
         })
         .style(swipe ? {} : {cursor: 'pointer'})
     ;
 
-    oo(NoteControls, {noteId});
+    const noteControls = oo(NoteControls);
 
     oo('Notefooter');
 
@@ -81,7 +83,7 @@ export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, rende
             //console.log('download children', card.children, 'for', noteId);
             binder.children = card.children;
             binder.prevId = card.prev;
-            //render(0); // TODO remove and test if it works (should not be needed because we got resize event)
+            onBinderUpdated(binder);
         }
     });
 
@@ -91,20 +93,28 @@ export function NoteCard({oo, go, res, setres, $}, {noteId, swipe, binder, rende
     });
 
     oo.x([
-        function getLeftNoteId() {
-            return cardHeader.getLeftNoteId();
+        //function getSelectedChildId() {
+        //    return noteControls.getSelectedChildId()
+        //},
+        function setSelectedChildId(id) {
+            return noteControls.setSelectedChildId(id)
         },
-        function getRightNoteId() {
-            return cardHeader.getRightNoteId();
+        function getLeftChildId() {
+            return noteControls.getLeftChildId();
+        },
+        function getRightChildId() {
+            return noteControls.getRightChildId();
         }
     ]);
 };
 
-function CardHeader({oo, $}, {noteId, swipe, showSignerName=true}) {
+function CardHeader({oo, $}) {
+    const {noteId, showSignerName=true} = oo.prop('noteId', 'showSignerName');
+
     oo.css(`
     CardHeader {
         display: grid;
-        grid-template-columns: 25px 1fr fit-content(100%)  1fr fit-content(100%) 1fr 25px 5px;
+        grid-template-columns: fit-content(100%)  1fr fit-content(100%);
         width: 100%;
         text-align: center;
         font-size: var(--fonts);
@@ -134,29 +144,15 @@ function CardHeader({oo, $}, {noteId, swipe, showSignerName=true}) {
         margin: 0;
     }
 
-    CardHeader Line {
+    /*CardHeader Line {
         display: block;
         width: 100%;
         height: 49%;
         border-bottom: 2px solid var(--background-cardheader);
-    }
+    }*/
     `);
 
     const CARD = oo.res(`res/card/note/${noteId}`);
-
-    const swipeTo = (direction) => {                                //console.log('swipeTo', direction, {swipe});
-        if(swipe) {
-            return swipe(direction);
-        }
-    };
-
-    const left = {
-        nav: oo('button').onclick(() => {
-            return swipeTo('left');
-        })
-    };
-
-    const leftLine = oo('Line');
 
     const signerName = oo('button')('Signername')
             .on(CARD, (card, oo) => {
@@ -168,7 +164,9 @@ function CardHeader({oo, $}, {noteId, swipe, showSignerName=true}) {
                 oo.go('/signer/' + $(CARD).signerId);
             })._
     ;
-    const signerNameLine = oo('Line');
+
+    const signerNameLine = oo('span');
+
     if(!showSignerName) {
         signerNameLine.style({visibility: 'hidden'});
         signerName.style({visibility: 'hidden'});
@@ -188,64 +186,65 @@ function CardHeader({oo, $}, {noteId, swipe, showSignerName=true}) {
              })
     ;
 
-    const rightLine = oo('Line');
-
-    const right = {
-        nav: oo('button').onclick(() => {
-            return swipeTo('right')
-        })
-    };
-
-    oo.on(CARD, (card) => {
-        const
-            {siblings} = card,
-            nbrSiblings = siblings.length,
-            index = siblings.findIndex(o => noteId === o.noteId),
-            leftNbrSiblings = index > 0 ? index : 0,
-            rightNbrSiblings = nbrSiblings - index - 1;
-
-        left.id = siblings[index-1]?.noteId;
-        right.id = siblings[index+1]?.noteId;
-
-        if(swipe) {
-            left.nav.text(leftNbrSiblings < 99 ? leftNbrSiblings : 99);
-            right.nav.text(rightNbrSiblings < 99 ? rightNbrSiblings : 99);
-        }
-
-        //right.id = noteId;
-        //right.nav.text('dbg');
-
-     });
-
-     if(!swipe) {
-        left.nav.style({visibility: 'hidden'});
-        leftLine.style({visibility: 'hidden'});
-        right.nav.style({visibility: 'hidden'});
-        rightLine.style({visibility: 'hidden'});
-     }
-
-     oo.x([
-        function getLeftNoteId() {
-            return left.id || null;
-        },
-        function getRightNoteId() {
-            return right.id || null;
-        }
-    ]);
+    //oo.x([
+    //    function foo() {
+    //    }
+    //]);
 }
 
-function NoteControls({oo, go}, {noteId}) { // reply, boost, block, share, information
+function NoteControls({oo, $, go}) { // reply, boost, block, share, information
+    const {swipe, noteId, binder} = oo.prop('swipe', 'noteId', 'binder');
     oo.css(`
     NoteControls {
         margin-top: 15px;
         display: grid;
-        grid-template-columns: repeat(4, 1fr);
+        /*grid-template-columns: 25px 1fr fit-content(100%)  1fr fit-content(100%) 1fr 25px 5px;*/
+        grid-template-columns: repeat(6, 1fr);
         column-gap: 5px;
         text-align: center;
         width: 100%;
         height: 40px;
     }
-    `);
+
+    NoteControls Button:hover {
+        background: var(--whitesun);
+        color: var(--grayspace);
+        cursor: pointer;
+    }
+
+    NoteControls Button {
+        font-size: var(--fonts);
+        border-radius: 12px;
+        background: var(--background-cardheader);
+        color: var(--whitemedium);
+        margin: 0;
+        max-height: 24px;
+        margin-top: 12px;
+    }
+
+    NoteControls Button.off {
+        color: var(--whitedark);
+    }
+     `);
+
+    let childId,
+        childIndex;
+
+    const swipeTo = (direction) => {                                //console.log('swipeTo', direction, {swipe});
+        if(swipe) {
+            return swipe(direction, binder);
+        }
+    };
+
+    const CARD = oo.res(`res/card/note/${noteId}`);
+
+    const left = {
+        button: oo('button').onevent('down', () => {
+            return swipeTo('left');
+        }),
+        index: -1,
+        id: null
+    };
 
     oo(Icon, 'add_comment', {md:24}).onclick(() => {
         go('/compose/' + noteId);
@@ -263,16 +262,79 @@ function NoteControls({oo, go}, {noteId}) { // reply, boost, block, share, infor
         alert('TODO');
     });
 
-    // TODO create grid and display icons
-    // TODO add res listener to update buttons
-    //const NODE = res(`res/tree/node/${noteId}?sort=bubble`, console.log);
+    const right = {
+        button: oo('button').onevent('down', () => {
+            return swipeTo('right');
+        }),
+        index: -1,
+        id: null
+    };
 
-    //const render = () => {
-    //};
+    if(!swipe) {
+        left.button.style({visibility: 'hidden'});
+        right.button.style({visibility: 'hidden'});
+    }
 
-    //oo.on(NODE, (node) => {
-    //    render(transformNode(node));
-    //});
+    const update = () => {
+
+        if(!swipe) return;
+
+        const card = $(CARD) || {children:[]};
+        const children = card.children;
+        if(!childId && children[0]) childId = children[0].noteId; // init
+        childIndex = children.findIndex(o => childId === o.noteId);
+
+        const leftNbrChildren = childIndex > 0 ? childIndex : 0;
+        if(swipe && leftNbrChildren > 0) {
+            left.button.text(leftNbrChildren < 99 ? leftNbrChildren : 99);
+            left.button.style({visibility: 'visible'});
+            left.index = childIndex - 1;
+            left.id = children[left.index] ? children[left.index].noteId : null;
+            left.button.classList({clear:true});
+        } else {
+            //left.button.style({visibility: 'hidden'});
+            left.button.classList({add:'off'});
+            left.button.text('0');
+            left.index = -1;
+            left.id = null
+        }
+
+        const rightNbrChildren = children.length - childIndex - 1;
+        if(swipe && rightNbrChildren > 0) {
+            right.button.text(rightNbrChildren < 99 ? rightNbrChildren : 99);
+            right.button.style({visibility: 'visible'});
+            right.index = childIndex + 1;
+            right.id = children[right.index] ? children[right.index].noteId : null;
+            right.button.classList({clear:true});
+        } else {
+            //right.button.style({visibility: 'hidden'});
+            right.button.classList({add:'off'});
+            right.button.text('0');
+            right.index = -1;
+            right.id = null
+        }
+
+        //console.log(noteId, {childId, childIndex, leftNbrChildren, rightNbrChildren, 'childLength:':children.length, left, right}, children.map(o => o.noteId) );
+        //console.log({noteId, children, childId, left, right});
+    };
+
+    oo.x([
+        function setSelectedChildId(id) {
+            childId = id;
+            update(true);
+            return childId;
+        },
+        //function getSelectedChildId() {
+        //    return childId;
+        //},
+        function getLeftChildId() {
+            return left.id;
+        },
+        function getRightChildId() {
+            return right.id;
+        }
+    ]);
+
+    oo.on(CARD, update);
 }
-
 

@@ -1002,38 +1002,51 @@ Steps
             //            //              maybe because item 2 was never in array
             //            fix: tail bounce top
             //fix: infinte list: widen the size of indow for when downloading new comments, to improve scrolling experience
->           // update: TREEBIT.md, de-emphasize spam and emphasize GUI navigation
+            // update: TREEBIT.md, de-emphasize spam and emphasize GUI navigation
             //        TREEBIT: decentralized, anonymous AND public. negatives of decenralizastion used to filter which is positive
             //        owning data is NOT being able to prevent other people from reading it, it is preventing other people from being able to take it from you
             //        privact / anonymoity is NOT same as not being public
             //        nothing can prevent you from leaking data, therefor it will never be protected against getting public
-            change: move tree left/right bubbles to parent
-            add: zip script, API and download
-            add: gitignore _secret...
-            install.md
-                add: TOR will start automatically comment
-                fix: "Install TOR": brew install TOR not openssl
-                add: how to start in install.md but make sure information is not duplicated in readme.md
-            add tree.js: batch download of cards
-                        temporarily change REMOVE values to 0
-                        increase download nbr items
-                        enable REMOVE valies again
-            fix: missing ":" on node nrls on node profile page
+            //add: gitignore _secret...
+            // change: move tree left/right bubbles to parent
+                    //draggable
+                    //line should be at bottom
+                    //make sure nav history (scrolling away items then scrolling them back) works
+                    //selected binder makes it impossible to select other
+                    //select new binder when pressing down on a binder not arleadt actve
+                    //fix: new elements are created when clicking on previously clicked branchpoint
+                    //fix: one frame randering of left side branch rendered off screen
+                    //add: clickable bubbles (scroll the child)
+                    //fix: history when swiping left and right
+                    //        "when binder leaves screen and binder is destroyed, the selected child gets missing
+                    //fix: need to scroll to show items
+                    //add: crete destroy window threshold so as to keep more in cache
+                    //add: preload vertically
+                    //fix: main items are hidden?! make default visible
+                    i//fix: when items above are loaded, they push down head
+            //fix: horizontal scrolling of wrong row
+            //add tree.js: batch download of cards
+            //            temporarily change REMOVE values to 0
+            //            increase download nbr items
+            //            enable REMOVE valies again
+>            fix: missing ":" on node nrls on node profile page
             fix: buttons in node profile "node can be reached on" does not respond
             fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
             fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
             fix: scrolling on home page (and other pages too) locks on mobile
             fix: scrolling in share modal locks scrolling
-            add: feeds, topmost signer
-            add: feed: topmost notes (already added?)
-            fix: sometimes you need to click twice on a button before click is registered
             fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
             fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
             add: DEV mode on page, to make sure that shows
-       bin/launch.sh
-            update: add a "simple startup" that autofills everything and startsyp
-            add: wizard / add mode
-        make sure building with PROD creates wizard comments, while DEV creates templates
+            update: install.md
+                fix: "Install TOR": brew install TOR not openssl
+                //add: TOR will start automatically comment
+                //add: how to start in install.md but make sure information is not duplicated in readme.md
+        //add: when clearnet, disable topenssl (this way less to install etc)
+        //bin/launch.sh
+        //    update: add a "simple startup" that autofills everything and startsyp
+        //    add: wizard / add mode
+        add: launch.sh create prod openssl certs
         make sure µ.config has correct values
                 resource continous polling should be enabled
                 make sure this works:
@@ -1059,6 +1072,12 @@ Steps
         DoD:
             able to run two different hotels (on different machines) and exchange data across peers on different hotels
     MVP (this list is un-ordered, order it before starting)
+        fix: tree.kjs. down on icon/button, then dragging, triggers onclick. ignore click if dragging
+        fix: optimize rendering by NOT re-calculating size all of the time. instead set dirty flag and re-use html elements
+        fix: sometimes you need to click twice on a button before click is registered
+        add: feeds, topmost signer
+        add: feed: topmost notes (already added?)
+        add: zip script, API and download
         add: openssl wrapper to handle errors
         add: use input hint for "Enter password" when empty
         add: share wizard. hotel hosts a a share wizard that figures out if invited friends is browsing using an android or iphone, dekstop etc

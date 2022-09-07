@@ -3,6 +3,7 @@ Semantic versioning - Date
 
 ## v - date
 ### Added
+- oo.prop. Will return first found prop, when traversing the branch (example: "oo(List, {foo:'bar'})(Elm).prop('foo')")(see: @example-1.html).
 - oo.onchild. Will be invoked when new child is added, but  depends on function being set manually (example: "oo.onchild = function({oo}){};").
 - snatch. Session (user sign-in/refresh, CSRF, BAM) handling for server/client.
 - utils. Generic utilities.

@@ -1,10 +1,13 @@
 # Install
 
 The source code in this project has zero package dependencies, so there is no neeed to install any packages.
-It does however depend these third-party softwares: NodeJs and TOR (optional).
+It does however depend on some third-party softwares:
+Always required: NodeJs
+Optional but required for Tor network: TOR
+Optional but required for SSL: OpenSSL
 
-When you have installed the dependencies, run this command for more information on how to start the app:
-$ ./bin/launch.sh --help
+When you have installed the dependencies, run this command to launch the Treebit Hotel and follow the instructions:
+$ ./launch.sh
 
 ## NodeJs
 Node is required to serve Treehut Hotel.

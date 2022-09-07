@@ -83,26 +83,31 @@ export async function mockupForest({ß, µ, countTrees=3, countNotes=3, options=
 
     const
         tree = [],
-        newForestAsync = async (nbrTrees, nbrNotes) => {
+        newForestAsync = async (nbrTrees, nbrNotes, add) => {
             for(let i = 1; i <= nbrTrees; i++) {
-                let note = await newNoteAsync({text:'im root '+i, signerId: (await newSignerAsync({})).signerId});
-                tree.push(note);
-                await newBranchAsync(note, nbrNotes);
+                let text = `root:${i} placeholder:${!add}`;
+                let note = await newNoteAsync({text, signerId: (await newSignerAsync({})).signerId, add});
+                if(add) tree.push(note);
+                await newBranchAsync(note, nbrNotes, 'first child of ' + text);
             }
         },
-        newBranchAsync = async (parent, nbrNotes) => { //L({branch});
+        newBranchAsync = async (parent, nbrNotes, text) => { //L({branch});
             for(let i = 1; i < nbrNotes; i++) {
                 let parentId = parent.noteId;
-                let text = createMockupSentence();
+                text = text || createMockupSentence();
                 let child = await newNoteAsync({text, parentId, signerId: (await newSignerAsync({})).signerId});
                 tree.push(child);
+                text = false;
                 parent = getRandomItem(tree);
             }
         };
 
 
     console.log({countTrees, countNotes});
-    await newForestAsync(countTrees, countNotes);
+    //await newForestAsync(countTrees, countNotes, true);
+    //await newForestAsync(1, 4, true);
+    await newForestAsync(1, 100, true);
+    //await newForestAsync(1, 2, false);
     //await newForestAsync(2, 20);
 
     if(options.gotoNote) {

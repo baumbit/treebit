@@ -32,7 +32,7 @@ const
     // folder and moving it to a new location.
     PORT_CN = arg('port', 9002), // port on clearnet
     HOST_CN = arg('host', 'localhost'),
-    PROTOCOL_CN = arg('clearnet', 'https'), // TODO change to https as default
+    PROTOCOL_CN = arg('clearnet', 'http'),
     ORIGIN_CN = PORT_CN === '80' ? `${PROTOCOL_CN}://${HOST_CN}` : `${PROTOCOL_CN}://${HOST_CN}:${PORT_CN}`,
 
     // tor=<port number> | tor=false (to disable tor) | or defaults to 9020 if undefined
@@ -45,7 +45,7 @@ const
     BASE_PATH_DB = arg('dbpath', `../_secret/${PORT_CN}/storage`);
 
 if(isShowHelp) {
-    log(`[--port=string] [--host=string] [--clearnet=string] [--tor=string] [--onion-service=string] [--dbpath=string] [--basepath=string] [--dbtest=string] [--tor-new=string] [--tor-publish=string] [--tor-network=string]
+    log(`Hotel options: [--port=string] [--host=string] [--clearnet=string] [--tor=string] [--onion-service=string] [--dbpath=string] [--basepath=string] [--dbtest=string] [--tor-new=string] [--tor-publish=string] [--tor-network=string]
 
 Hosting
     --port              Port for server listening to clearnet. (default: ${PORT_CN})

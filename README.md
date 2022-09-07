@@ -6,7 +6,7 @@ Welcome to Treebit, a user-centric peer-to-peer social network, based on volunta
 This project is written in vanilla JavaScript, but developers are encouraged to implement Treebit in other languages.
 
 ## How do I start the app?
-First read [./docs/install.md](./docs/install.md) then run ./bin/launch.sh.
+First read [./docs/install.md](./docs/install.md) then run ./launch.sh
 
 ## How do I start developing?
 See [./docs/development.md](./docs/development.md).

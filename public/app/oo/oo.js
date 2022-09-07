@@ -1,6 +1,6 @@
 const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { //console.log('OO');
     // if a rootElement is specified (either as HTML ), OO will append to it.
-    // if no rootElement is specified OO will try to 
+    // if no rootElement is specified OO will try to
     //
     //
     // but there are HTML element matching the refs supplied those will be used.
@@ -181,7 +181,7 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
         context.eachProp = (o, cb, excludeProp) => {
             for(let p in o) {
                 if(o.hasOwnProperty(p) && p !== excludeProp) {
-                    cb(o[p], p, o);
+                    if(cb(o[p], p, o) === false) break;
                 }
             }
         };
@@ -1981,6 +1981,22 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
             //if(!context.oos[ref]) console.log('Does not exixst', ref);
             return context.remove(context.oos[ref], isPreserveElement);
         };
+        context.getProp = function(f, keys, r={}) {
+            for(let k in keys) {
+                k = keys[k];
+                let ff = f;
+                while(ff) {
+                    let props = ff.getProps(); //console.log(ff, props, k, k in props, keys);
+                    if(k in props) {
+                        if(keys.length === 1) return props[k];
+                        r[k] = props[k];
+                    }
+                    else if(ff.ref === context.rootRef) break;
+                    ff = ff.parent();
+                }
+            }
+            return r;
+        };
         context.bubble = function(f) {
             const args = [...arguments].splice(1);
             let parentF = f._;
@@ -2588,6 +2604,7 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
             };
             f.props(props);
             f.getProps = () => props;
+            f.prop = function() { return context.getProp(f, [...arguments]); } // will search for prop
 
             for(let p in context.ooFunction) {
                 if(f[p] && !context.ooFunction.override) {

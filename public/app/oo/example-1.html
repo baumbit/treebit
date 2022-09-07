@@ -105,8 +105,11 @@
         function TugExampleWithAttribute({oo}, props) {
             oo('span', 'TugExampleWithAttribute: ' + props.foo);
             console.log(props);
+            const onlyOneKeySpecified = oo.prop('foo'); // will traverse the branch in search for the specified props
+            const {foo, foo2} = oo.prop('foo', 'foo2');
+            console.log('Easy access to props in the scope (current tag branch)', {foo, foo2});
         }
-        body(TugExampleWithAttribute, {foo:'bar'}); // compare with below
+        body('div', {foo2:'bar2'})(TugExampleWithAttribute, {foo:'bar'}); // compare with below
         body('div', {foo:'bar'}); // sets attribute "foo" on div tag
         body('br');
         body('br');

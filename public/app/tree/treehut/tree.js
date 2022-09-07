@@ -85,18 +85,24 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
 
         TOP_REMOVE_NOTE = Math.ceil(TOP - (VIEW_HEIGHT/2)),
         BOTTOM_REMOVE_NOTE = Math.ceil(BOTTOM + (VIEW_HEIGHT/2)),
-        //TOP_REMOVE_NOTE = TOP,            // DEBUG
+        //TOP_REMOVE_NOTE = TOP,            // DEBUG. good when debugging preloads etc.
         //BOTTOM_REMOVE_NOTE = BOTTOM,      // DEBUG
 
         LEFT_MARGIN_NOTE = 3,
         BOUNCE_BOTTOM = BOTTOM - 100, // TODO pick this value from size of last element instead
         BOUNCE_TOP = TOP + 50, // TODO pick this value from size top element instead
-        HALF_WIDTH = VIEW_WIDTH * 0.5;
+        HALF_WIDTH = VIEW_WIDTH * 0.5,
+
+        MAX_PRELOAD_UP = 30,
+        MAX_PRELOAD_DOWN = 30;
        //pools = {};
     let head,
+        lastRenderedBinder,
         branchPoint = {},
-        dragOffsetY;
-        //stateXSwipe;
+        dragOffsetY,
+        isPreloadDown = false,
+        isPreloadUp = false;
+         //stateXSwipe;
 
     oo.onDestroy(() => {                                                        //console.log('destroy list');
         // TODO deregister mouse input etc
@@ -124,6 +130,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
     }
 
     function render(stateX={x:0, easeValue:0}, stateY={y:0, easeValue:0}) {                 //console.log(branchPoint);
+        //console.log('render', stateX, stateY, branchPoint);
         try {
             if(oo.isDestroyed) return; // render may be invoked via requestAnimationFrame or similar.
             if(head) {
@@ -174,7 +181,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                     else if(stateX.flingFinished) {                                             //console.log('flingFinished');
                         snapX();
                     }
-                    else if(stateX.snapFinished) {                                             console.log('snap finished');
+                    else if(stateX.snapFinished) {                                             //console.log('snap finished');
                         x = LEFT_MARGIN_NOTE;
                         resetScrollY(true);
                         resetScrollX(true);
@@ -189,7 +196,11 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                     //    console.log('idle');
                     //}
                 }
-                renderList(head, y, x, !!stateX.ease, stateX, stateY, stateX.snappedToBinder, 'selected'); // TODO renderList(head, y, 0, 0);
+                lastRenderedBinder = renderList(head, y, x, !!stateX.ease, stateX, stateY, stateX.snappedToBinder, 'selected'); // TODO renderList(head, y, 0, 0);
+                if(branchPoint.selectedBinder && stateX.snapFinished) {
+                    // scrolling commpleted
+                    clearBranchPoint();
+                }
             }
         } catch(e) {
             console.log(branchPoint);
@@ -202,7 +213,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
             tail;
         while(o) {                                                      //log(`render=${o.noteId} next=${o.next}`);
             // vertical
-            updateBound(o);
+            //updateBound(o);
             tail = o;
             o.topY = bottomY + Y_MARGIN; //console.log('head', o.topY, bottomY);
             o.oo.elm.style.top = o.topY + 'px'; // browser
@@ -215,7 +226,16 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 else o.x = x;
                 //o.oo.elm.style.transform = "translateX" + Math.floor(o.x) + "px)";
                 o.oo.elm.style.left = o.x + 'px';                               //console.log('x=', o.x);
+                if(o.right <= 0 || o.x > VIEW_WIDTH) {
+                    o.oo.elm.style.visibility = 'hidden';
+                    //console.log('hidden', o.right, o.x);
+                } else if(o.oo.elm.style.visibility === 'hidden') {
+                    o.oo.elm.style.visibility = 'visible';
+                }
+            } else if(o.oo.elm.style.visibility === 'hidden') {
+                o.oo.elm.style.visibility = 'visible';
             }
+            //console.log(o.left, o.right);
             if(stateY.down) {                                                   //console.log('items appear from ABOVE');
                  if(o === head && o.topY > BOUNCE_BOTTOM) {                     //console.log('head went to low. bounce');
                     o.topY = VIEW_HEIGHT;
@@ -251,20 +271,20 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 renderList(branchPoint.selectedBinder, bottomY, x, isAddX, stateX, stateY, true);
 
                 if(branchPoint.leftBinder) {
-                    branchPoint.leftBinder.oo.elm.style.visibility = 'visible';
+                    //branchPoint.leftBinder.oo.elm.style.visibility = 'visible';
                     renderList(branchPoint.leftBinder, bottomY, branchPoint.selectedBinder.x - VIEW_WIDTH - LEFT_MARGIN_NOTE, false, stateX, stateY, true, 'left');
                 }
 
                 if(branchPoint.rightBinder) {
                     const rightX = branchPoint.selectedBinder.x + VIEW_WIDTH + LEFT_MARGIN_NOTE;
-                    branchPoint.rightBinder.oo.elm.style.visibility = 'visible';
+                    //branchPoint.rightBinder.oo.elm.style.visibility = 'visible';
                     renderList(branchPoint.rightBinder, bottomY, rightX, false, stateX, stateY, true, 'right');
                 }
 
                 isAboveBottomView = false;
                 break;
             } else {    //console.log('');                     //console.log('head', head.noteId, 'tail', o.noteId, 'o.next', o.next);
-                o = o.next;
+                o = o.next; //console.log({o});
             }
         }
         //console.log('tail is head', head.noteId === tail.noteId);
@@ -282,8 +302,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                     head = o; //console.log({bottomY});
                     head.topY = bottomY - o.height; //getItemHeight(head);//.height;
                     head.oo.elm.style.top = o.topY + 'px'; // browser
-
-                    selectChild(head.next, head);
+                    if( !getSelectedChild(head) ) selectChild(head.next, head);
                 } else {
                     break;
                 }
@@ -299,6 +318,12 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 let parentX = tail.x;
                 if(topY < BOTTOM) {
                    let nextId = getSelectedChild(tail);                     //console.log('append. tail=', tail.noteId, 'next', nextId);
+                   if(!nextId) {
+                       let bestChild = tail.children && tail.children[0]; //console.log('TODO make sure this is renderer bestChikd', bestChild, tail);
+                       if(bestChild) {
+                           nextId = bestChild.noteId;
+                       }
+                   }
                    o = createBinder(nextId);
                    if(o) {                                                  //log('create tail', o.noteId);
                         o.topY = topY;
@@ -308,6 +333,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                         tail.next = o;
                         o.prev = tail;
                         tail = o;
+                        selectChild(tail, tail.prev);
                     } else {
                         break;
                     }
@@ -316,37 +342,30 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 }
             }
         }
+
+        return tail;
+
         // bounce
         //if(!head.next) scrollHandler.bounce(); // TODO SCROLL
     } // renderList: end
 
-    let navChildren = {};
+    let navChildren = {}; // while binder.next also knows the selected child, binders may get destroyed, hence this needed
 
     function getSelectedChild(prev) {
-        let children = navChildren[prev.noteId];
-            // TODO
-            //      probably with best child, the children list should already be sorted when it arrives from server
-            //              so just pick in that order (this is how graBestChild works right?! investigate possible nee
-            //                     include the score
-            //              the response server sends to client)...
-        if(!children) children = prev.children;
-        if(!children) return;
-        if(children.length) return children[0].noteId;
+        let selected = navChildren[prev.noteId];
+        if(selected) return selected.noteId;
+        //return selected;
+        //if(!selected && prev.children && prev.children.length) {
+        //    selected = prev.children[0];
+        //}
+        //if(selected) return selected.noteId;
     }
 
-    function selectChild(selected, head) {                                          //console.log('selectChild', head.children);
-        let children = navChildren[head.noteId];
-        if(!children) children = head.children;
-        if(!children) return;
-        if(children.length && children[0].noteId !== selected.noteId) {                               // console.log('select child');
-            //const children = $(`res/card/note/${prevId}/children`);
-            const i = children.findIndex(elm => elm.noteId === selected.noteId);             //console.log('found ', noteId, 'at', i);
-            if(i >= 0) {
-                children.unshift(children.splice(i, 1)[0]);
-                //$.set(`res/card/note/${prevId}/children`, children);
-                navChildren[head.noteId] = children; //console.log('set nav children for', head.noteId, children);
-            }
+    function selectChild(selected, prev) {                                          //console.log('selectChild', head.children);
+        if(prev) {
+            prev.oo.setSelectedChildId(selected.noteId);
         }
+        navChildren[prev.noteId] = selected;
     }
 
     function snapX() {                                                          //console.log('snapX', {...branchPoint});
@@ -369,7 +388,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
     function flipX() {                                                          //console.log('flip');
         if(branchPoint.leftBinder) {
             if(branchPoint.leftBinder.x > 0 - HALF_WIDTH) {
-                if(branchPoint.flip !== branchPoint.leftBinder) {               console.log('flip left');
+                if(branchPoint.flip !== branchPoint.leftBinder) {               //console.log('flip left');
                     updateBranchPoint(branchPoint.leftBinder, 'left');
                     return true;
                 }
@@ -377,7 +396,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         }
         if(branchPoint.rightBinder) {
             if(branchPoint.rightBinder.x < HALF_WIDTH) {
-                if(branchPoint.flip !== branchPoint.rightBinder) {                  console.log('flip right');
+                if(branchPoint.flip !== branchPoint.rightBinder) {                  //console.log('flip right');
                     updateBranchPoint(branchPoint.rightBinder, 'right');
                     return true;
                 }
@@ -395,14 +414,23 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         }
     }
 
-    function swipe(direction) {                                     //console.log('swipe', direction);
-        if(direction === 'left') {
-            scrollHandler.flingX(VIEW_WIDTH * 1);
+    function swipe(direction, binder) {                                     //console.log('swipe', direction);
+        if(binder.next) {
+            updateBranchPoint(binder.next);
+            if(direction === 'left') {
+                if(branchPoint.leftId) {
+                    scrollHandler.flingX(VIEW_WIDTH * 1);
+                    return false;
+                }
+            }
+            else {
+                if(branchPoint.rightId) {
+                    scrollHandler.flingX(VIEW_WIDTH * -1);                  //console.log('swipe dlinfg', {VIEW_WIDTH});
+                    return false;
+               }
+            }
         }
-        else {
-            scrollHandler.flingX(VIEW_WIDTH * -1);                  //console.log('swipe dlinfg', {VIEW_WIDTH});
-        }
-    }
+     }
 
     function setLocation(noteId) {
         if(noteId) go(`/note/${noteId}`, undefined, {silent:true});
@@ -410,8 +438,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
     }
 
     function addSelectHandler(binder) {
-        binder.oo.onevent('down', ({event}) => {
-            setLocation(binder.noteId);
+        binder.oo.onevent('down', (svnt) => {
             updateBranchPoint(binder);
         });
     }
@@ -437,9 +464,12 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
 
         if(!binder.prev) console.error('no prev inder');
 
-        if(branchPoint.selectedBinder) {
-            // not possible to scroll items on different "rows" at the same time
+        if(branchPoint.selectedBinder) { //console.log('not possible to scroll items on different "rows" at the same time');
             if(branchPoint.parentBinder !== binder.prev) return;
+        }
+
+        if(branchPoint.selectedBinder !== binder) {
+            setLocation(binder.noteId);
         }
 
         const old = branchPoint;
@@ -450,21 +480,31 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
             isScrollAxis: false,
             selectedBinder: binder,
             parentBinder: binder.prev,
-            leftId: binder.oo.getLeftNoteId(),
-            rightId: binder.oo.getRightNoteId()
+            leftId: binder.prev.oo.getLeftChildId(),
+            rightId: binder.prev.oo.getRightChildId()
         };
+        //console.log('parent', binder.prev, 'left:', branchPoint.leftId, 'right', branchPoint.rightId);
 
         if(flip) {
             branchPoint.flip = branchPoint.selectedBinder;
             branchPoint.isScrollAxis = true;
             selectChild(branchPoint.flip, branchPoint.flip.prev);
-            console.log('flipped to', branchPoint.flip);
+            branchPoint.leftId = branchPoint.parentBinder.oo.getLeftChildId();
+            branchPoint.rightId = branchPoint.parentBinder.oo.getRightChildId();
+            //console.log('flip', 'left:', branchPoint.leftId, 'right:', branchPoint.rightId);
         }
 
+        //console.log('TODO are this the proper child ids?" get them now or later?!?!?!=');
+        //console.log('branchPoint', branchPoint.selectedBinder.noteId, 'l', branchPoint.leftId, 'r', branchPoint.rightId);
+        // leftId: binder.prev && binder.prev.oo && binder.prev.oo.getLeftChildId(),
+        //rightId: binder.prev && binder.prev.oo && binder.prev.oo.getRightChildId()
+
         if(old) {
+            //console.log('left:', branchPoint.leftId, 'right:', branchPoint.rightId);
             branchPoint.leftBinder = scrapeBranchPointBinder(old, branchPoint.leftId);
             branchPoint.rightBinder = scrapeBranchPointBinder(old, branchPoint.rightId);
-            console.log('reuse binders', 'left:', !!branchPoint.leftBinder, 'right:', !!branchPoint.rightBinder, 'old',{...old},'new',{...branchPoint});
+            //console.log('reuse binders', 'left:', !!branchPoint.leftBinder, 'right:', !!branchPoint.rightBinder, 'old',{...old},'new',{...branchPoint});
+            //console.trace();
         }
 
         //console.log('create missing binders', 'left:', !branchPoint.leftBinder, 'right:', !branchPoint.rightBinder);
@@ -488,11 +528,17 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
             if(isBranchBinderRemoveable(old.selectedBinder)) remove(old.selectedBinder, true, true);
         }
 
-        setLocation(branchPoint.selectedBinder.noteId);
         //console.log('updated branch point', {...branchPoint});
     }
 
-    function clearBranchLeftRight(preserveBinder) {                //console.log('clearBranchLeftRight'); console.trace();
+    function clearBranchPoint() {
+        if(branchPoint) {
+            clearBranchLeftRight();
+        }
+        branchPoint = {};
+    }
+
+    function clearBranchLeftRight() {                //console.log('clearBranchLeftRight'); console.trace();
         //console.log('clear binders', 'left:', !!branchPoint.leftBinder, 'right:', !!branchPoint.rightBinder);
         if(branchPoint.leftBinder) {
             branchPoint.leftId = null;
@@ -517,7 +563,9 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
 
     function updateBound(o) {                                               //console.log('updateBound', o);
         const rect = o.oo.getBoundingClientRect(); //console.log({rect}, oo.elm);
-         o.height = Math.floor(rect.bottom - rect.top);
+        o.height = Math.floor(rect.bottom - rect.top);
+        o.left = rect.left;
+        o.right = rect.right;
     }
 
     function requestRender(){
@@ -532,10 +580,10 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         }
     }
 
-    function remove(o, isRemoveAll, isIgnorePrev) {                        //console.trace('remove');
+    function remove(o, isRemoveAll, isIgnorePrev) {               ///cconsole.log('remove');
         if(branchPoint){
             if(branchPoint.selectedBinder === o) {
-                branchPoint = {};
+                clearBranchPoint();
             }
         }
         if(o.prev) {                                                //log('not at top', {o});
@@ -582,28 +630,84 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         else binder = {noteId};
 
         binder.children = null;
-        binder.oo = oo(NoteCard, {swipe, noteId, binder, render:requestRender}); //console.log('createBinder noteId', noteId); console.trace();
+        binder.oo = oo(NoteCard, {swipe, noteId, binder, onBinderUpdated}); //console.log('createBinder noteId', noteId); console.trace();
         binder.topY = 0;                                                 //log(o);
         binder.prevId = null;
         binder.prev = null;
         binder.next = null;
         if(!position) binder.x = LEFT_MARGIN_NOTE;
-        else if(position === 'left') binder.x = 0 - VIEW_WIDTH;
-        else if(position === 'right') binder.x = VIEW_WIDTH + LEFT_MARGIN_NOTE;
+        else {
+            if(position === 'left') binder.x = 0 - VIEW_WIDTH - LEFT_MARGIN_NOTE;
+            else if(position === 'right') binder.x = VIEW_WIDTH + LEFT_MARGIN_NOTE;
+        }
+        binder.oo.elm.style.visibility = 'hidden'; // prevent one frame flickering
         binder.oo.elm.style.left = binder.x + 'px';
-        //binder.oo.elm.style.visibility = visibility;
         addSelectHandler(binder);
         updateBound(binder);
         return binder;
     }
 
-    function refresh() {
-        let o = head;
-        while(o) {
-            o.oo.refresh();
-            o = o.next;
+    function onBinderUpdated(binder) { //console.log('binder updated', binder.noteId);
+        // the cards knows if they are updated and when they are,
+        // they can notify this list that they have been updated.
+        if(binder.oo) {
+            //console.log(binder.topY);
+            updateBound(binder);
+        }
+        requestRender(0);
+
+        if(head === binder) {
+            preloadUpAsync(binder);
+        } else if(lastRenderedBinder === binder) {
+            preloadDownAsync(binder);
         }
     }
+
+    async function preloadUpAsync(binder) {
+        if(isPreloadUp) return;
+        isPreloadUp = true;
+        let prevId = binder.prevId; //console.log('preload-UP-Async',prevId, binder);
+        for(let i = 0; i < MAX_PRELOAD_UP && prevId; i++) { //console.log(i, prevId);
+            let CARD = `res/card/note/${prevId}`;
+            if(oo.$(CARD)) {
+                //console.log('already have card', CARD);
+                break;
+            } //else console.log('preload UP card:', CARD);
+            await oo.resAsync(CARD, ({data}) => {
+                prevId = data.prev;
+            });
+        }
+        isPreloadUp = false;
+    }
+
+    async function preloadDownAsync(binder) {
+        if(isPreloadDown) return;
+        isPreloadDown = true; //console.log('will isPreloadDown cards', binder);
+        let children = binder.children;
+        for(let i = 0; i < MAX_PRELOAD_DOWN && children; i++) {
+            let o = children[0];
+            if(!o) break;
+            let CARD = `res/card/note/${o.noteId}`;
+            if(oo.$(CARD)) {
+                //console.log('already have card', CARD, o);
+                break;
+            } //else console.log('isPreload-Down- card:', CARD);
+            await oo.resAsync(CARD, ({data}) => {
+                //console.log(data);
+                children = data.children;
+            });
+        }
+        isPreloadDown = false;
+    }
+
+
+    //function refresh() {
+    //    let o = head;
+    //    while(o) {
+    //        o.oo.refresh();
+    //        o = o.next;
+    //    }
+    //}
 
     // TODO
     //          ensure unique ref

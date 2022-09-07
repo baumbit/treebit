@@ -311,7 +311,7 @@ export function createResourceApi(/*{ondemand=true},*/ addRoute) {
             card.text = noteNode.note.data.text;
             card.prev = noteNode.note.data.prev;
             card.children = await canopy.grabSortedChildrenAsync(null, card.noteId).catch(console.error);
-            card.siblings = await canopy.grabSortedChildrenAsync(null, card.prev);
+            //card.siblings = await canopy.grabSortedChildrenAsync(null, card.prev);
             card.score = await canopy.getNoteScoreAsync(noteNode);
             const signer = await canopy.getSignerAsync(card.signerId);
             card.signerName = signer.data.name; //console.log({card, signer});
@@ -363,7 +363,7 @@ async function createNoteResourceAsync(canopy, noteNode) { //T({noteNode});
     // and it depends on wheter cabinet have "seen" the notes before or not, hence
     // it is also a question about cabinet-sessions.
     o.children = await canopy.grabSortedChildrenAsync(null, noteNode.note.noteId);
-    o.siblings = await canopy.grabSortedChildrenAsync(null, noteNode.note.data.prev);
+    //o.siblings = await canopy.grabSortedChildrenAsync(null, noteNode.note.data.prev);
     return o;
 }
 
