@@ -8,45 +8,23 @@ if(!nodeArgs.length) {
     console.log('$ ./launch-nodejs-watch.js <./basePath> <--trace-uncaught --expose-gc ./file.js>');
     process.exit(0);
 }
-const importPath = nodeArgs[0];
-//const obeservePath = nodeArgs[1] || process.argv[1].split('/').reverse()[0];
-//console.log('Observering mutations on path', obeservePath);
 
 import fs from 'fs';
-import {resolve} from 'path';
-const {readdir, open, stat} = fs.promises;
-let index = {};
-async function updateIndex(dir='.') {
-    const dirents = await readdir(dir, { withFileTypes: true });
-    const files = await Promise.all(dirents.map(async (dirent) => {
-        let res = resolve(dir, dirent.name);
-        if(!index[res]) {
-            index[res] = {path:res};
-        }
-        if(dirent.isDirectory()) await updateIndex(res);
-    }));
-}
-
-//import util from 'util';
 import { spawn } from 'child_process';
 let child;
+let watcherId = Math.floor((Math.random() * 1000)) + '-' + new Date();
+
 async function startChildProcess() {
-    if(child) child.kill("SIGTERM");
-    console.log('node', nodeArgs);
+    if(child) {
+        console.log(watcherId + ' terminating current node');
+        child.kill("SIGTERM");
+    }
+    console.log(watcherId + ' spwaning new node', nodeArgs);
     child = spawn('node', nodeArgs, {
         cwd: process.cwd(),
         detached: true,
         stdio: "inherit"
     });
-}
-
-async function watch() {
-    for(let o in index) {
-        o = index[o]; //console.log(o);
-        fs.watch(o.path, async (eventType, filename) => {
-            await startChildProcess();
-        });
-    }
 }
 
 process.on('SIGINT', () => {
@@ -55,10 +33,21 @@ process.on('SIGINT', () => {
     process.exit(1);
 });
 
+const timer = ms => new Promise( res => setTimeout(res, ms));
+
 (async () => {
     await startChildProcess();
-    await updateIndex(basePath);
-    await watch();
-    console.log('started watching platform events');
+    let timeout, arr = [];
+    fs.watch(basePath, {recursive:true}, (eventType, filename) => {
+        arr.push(eventType + ' ' + filename);
+        if(!timeout) { // wait for other changes to happen.
+            timeout = setTimeout(async () => {
+                console.log(watcherId + ' watched', arr);
+                await startChildProcess();
+                timeout = null;
+                arr = [];
+            }, 500);
+        }
+    });
 })();
 

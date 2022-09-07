@@ -2,7 +2,7 @@
 // setup environment
 const
     log = console.log;
-
+log('*** Starting Treebit Hotel ***');
 // app options
 let serverArgv = process.argv.slice(2); //console.log({serverArgv});
 const

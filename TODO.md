@@ -1028,7 +1028,7 @@ Steps
             //add tree.js: batch download of cards
             //            temporarily change REMOVE values to 0
             //            increase download nbr items
-            //            enable REMOVE valies again
+            //            enable REMOVE valies again:wq
 >            fix: missing ":" on node nrls on node profile page
             fix: buttons in node profile "node can be reached on" does not respond
             fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
@@ -1042,6 +1042,7 @@ Steps
                 fix: "Install TOR": brew install TOR not openssl
                 //add: TOR will start automatically comment
                 //add: how to start in install.md but make sure information is not duplicated in readme.md
+        fix: launch dev starts several instances of node
         //add: when clearnet, disable topenssl (this way less to install etc)
         //bin/launch.sh
         //    update: add a "simple startup" that autofills everything and startsyp

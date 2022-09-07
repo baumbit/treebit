@@ -79,7 +79,6 @@ fi
 
 if [[ "$@" =~ "--dev" ]] ; then
 #if [ "$1" == "--dev" ] || [ "$1" == "--dev=true" ]; then
-    con
     cd $DIR/public
     echo Server will restart when files in this dir or subdirs are mutated.
     ./app/oo/launch-nodejs-watch.js ./app --trace-uncaught --expose-gc ./app/tree/hotel/server.js "$@"
