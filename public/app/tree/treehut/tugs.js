@@ -355,6 +355,8 @@ export function CopyableText({oo, css, $}, {text, enable=true, expanded, size, s
                 else span.text(text);
             }
 
+            if(enable) revealIcon.classList({remove:'disable'});
+            else revealIcon.classList({add:'disable'});
         }
 
         // copy

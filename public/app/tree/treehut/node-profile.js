@@ -126,7 +126,6 @@ function ProtocolList({oo, css, $, res, setres}) {
                 cnRadio.setEnable(isEnabled);
                 cn.isEnabled = isEnabled;
             });
-
     const
         onionRadio = list(RadioButton, {protocol:onion})
             .onclick(({oo}) => {

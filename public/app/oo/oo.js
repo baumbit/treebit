@@ -1649,7 +1649,8 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                 return f;
             }
 
-            function propagate(f, synthetic, x, y, event, isStopPropagation, ignoreIntercept) { //console.log('propagate', synthetic, event);
+            function propagate(f, synthetic, x, y, event, isStopPropagation, ignoreIntercept) {
+                //if(synthetic !== 'move')console.log('propagate', {synthetic, event, isStopPropagation, ignoreIntercept});
                 event.stopPropagation(); // awalys stop propagation of real event
                 const syntheticEvent = {x, y, event, oo: f.oo, value:f.elm.value, $: f.$, elm: f.elm};
                 const iarr = interceptors[synthetic];
@@ -1658,13 +1659,19 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                         if(iarr[i].cb(syntheticEvent) === false) return;
                     }
                 }
+                f = context.ooByElm(event.target); // target oo
+                const path = [];
                 while(f) {
+                    path.push(f);
+                    f = f._;
+                }
+                for(let j = path.length - 1; j >= 0; j--) { // propagate from outer to inner (target last)
+                    f = path[j];
                     let arr = f.eventHandlers[synthetic];
-                    for(let i = 0; arr && i < arr.length; i++) { //console.log(i, synthetic, syntheticEvent);
+                    for(let i = 0; arr && i < arr.length; i++) {  //if(synthetic !== 'move') console.log(i, synthetic, syntheticEvent, arr[i]);
                         if(!isStopPropagation && arr[i](syntheticEvent) === false) isStopPropagation = true;
                     }
-                    if(isStopPropagation) return;
-                    f = f._;
+                    if(isStopPropagation) return; // stop propagating if event handler returned false
                 }
             }
 
@@ -1926,6 +1933,7 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
         };
         pAArent = context.createooo({ref: context.rootRef});
         context.byRef = (ref) => context.oos[ref];
+        context.ooByElm = (elm) => context.oos[elm.attributes.ref.value];
         context.createIndexRef = (paarent) => {
             const pRef = paarent.ref;
             for(let i = 0; i < Number.MAX_VALUE; i++) {
