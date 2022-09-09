@@ -1031,6 +1031,9 @@ Steps
             //            enable REMOVE valies again:wq
             //fix: buttons in node profile "node can be reached on" does not respond
             //    fix: propagate event down to children
+            //Fix note card controls clickable during drag. Press down on control icon and then drag, should abort icon click.
+            Fix node profile bounce at screen top, when scrolling vertically.
+            Fix note card hidden in tree when scrolling horizontally.
             fix: missing ":" on node nrls on node profile page
             fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
             fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
@@ -1074,7 +1077,6 @@ Steps
         DoD:
             able to run two different hotels (on different machines) and exchange data across peers on different hotels
     MVP (this list is un-ordered, order it before starting)
-        fix: tree.kjs. down on icon/button, then dragging, triggers onclick. ignore click if dragging
         fix: optimize rendering by NOT re-calculating size all of the time. instead set dirty flag and re-use html elements
         fix: sometimes you need to click twice on a button before click is registered
         add: feeds, topmost signer

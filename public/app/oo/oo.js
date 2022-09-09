@@ -1581,9 +1581,13 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                 return o;
             }
 
-            function add(f, synthetic, cb, options={}) {
-                // TODO add support for iPad, Android etc
-                if(options.intercept) intercept(f, synthetic, cb, options.intercept);
+            function add(f, synthetic, cbArr, options={}) { // TODO add event support for iPad, Android etc
+                if(Object.prototype.toString.call(cbArr) === '[object Array]') {
+                    if(options.intercept) throw new Error('intercept can not be combined with pre-event');
+                } else {
+                    cbArr = [null, cbArr];
+                }
+                if(options.intercept) intercept(f, synthetic, cbArr[1], options.intercept);
                 let isTouch;
                 const platformEventTypes = [];
                 if(synthetic === 'down') {
@@ -1641,11 +1645,10 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                     });
                     // note: only first option registered will take  effect because listener is re-used
                     platformEventTypes.forEach((type) => {
-                        if(type)
                         f.elm.addEventListener(type, ff, options);
                     });
                 }
-                if(!options.intercept) f.eventHandlers[synthetic].push(cb);
+                if(!options.intercept) f.eventHandlers[synthetic].push(cbArr);
                 return f;
             }
 
@@ -1659,21 +1662,36 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                         if(iarr[i].cb(syntheticEvent) === false) return;
                     }
                 }
-                f = context.ooByElm(event.target); // target oo
+                f = context.ooByElm(event.target); // target/inner oo
                 const path = [];
                 while(f) {
-                    path.push(f);
+                    path.push(f); // inner first, outer last
                     f = f._;
                 }
-                for(let j = path.length - 1; j >= 0; j--) { // propagate from outer to inner (target last)
+                for(let j = path.length - 1, v; j >= 0; j--) { // first: propagate from outer to inner (target last)
                     f = path[j];
                     let arr = f.eventHandlers[synthetic];
                     for(let i = 0; arr && i < arr.length; i++) {  //if(synthetic !== 'move') console.log(i, synthetic, syntheticEvent, arr[i]);
-                        if(!isStopPropagation && arr[i](syntheticEvent) === false) isStopPropagation = true;
+                        if(!isStopPropagation && arr[i][0]) {
+                            v = arr[i][0](syntheticEvent, v); //console.log('send', arr[i][0], v);
+                            if(v === false) isStopPropagation = true;
+                        }
                     }
                     if(isStopPropagation) return; // stop propagating if event handler returned false
                 }
-            }
+                for(let j = 0, v; j < path.length; j++) { // then: propagate from inner to outer
+                    f = path[j];
+                    let arr = f.eventHandlers[synthetic];
+                    for(let i = 0, prevent; arr && i < arr.length; i++) {
+                        prevent = arr[i][1];
+                        if(!isStopPropagation && prevent) {
+                            v = prevent(syntheticEvent, v); //console.log({prevent, v});
+                            if(v === false) isStopPropagation = true;
+                        }
+                    }
+                    if(isStopPropagation) return; // stop propagating if event handler returned false
+                }
+           }
 
             return {
                 add,
@@ -2339,7 +2357,7 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
             };
                 // element shim methods
             f.eventHandlers = {};
-            f.onevent = (eventType, cb, options) => context.eventManager.add(f, eventType, cb, options);
+            f.onevent = (eventType, cbArr, options) => context.eventManager.add(f, eventType, cbArr, options);
             f.onclick = (cb, options={capture:true}) => f.onevent('click', cb, options);
             f.oninput = (cb, options) => f.onevent('input', cb, options);
             f.oninputed = (cb, value, is) => {           // note: does not add async to promises, because its an event
@@ -2847,10 +2865,18 @@ OO.swipe = function(cb/*y, flingSpeed*/, oo, xController, yController, {dragThre
             return false;
         };
 
-    oo.onevent('down', down, {intercept:Number.MAX_VALUE});
-    oo.onevent('move', move, {intercept:Number.MAX_VALUE});
-    oo.onevent('up', up, {intercept:Number.MAX_VALUE});
-    oo.onevent('leave', up, {intercept:Number.MAX_VALUE});
+    oo.onevent('down', down);
+    oo.onevent('move', move);
+    oo.onevent('up', up);
+    oo.onevent('leave', up);
+
+    //oo.onevent('down', down, {intercept:Number.MAX_VALUE});
+    //oo.onevent('move', move, {intercept:Number.MAX_VALUE});
+    //oo.onevent('up', (e) => {
+    //    console.log('drag intercept', e);
+    //    return up(e);
+    //}, {intercept:Number.MAX_VALUE});
+    //oo.onevent('leave', up, {intercept:Number.MAX_VALUE});
 
     oo.onDestroy(() => {    //console.log('destroy swipe');
         isSwiping = false;

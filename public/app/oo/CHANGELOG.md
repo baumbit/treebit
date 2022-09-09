@@ -27,7 +27,7 @@ Semantic versioning - Date
 - resource-oo.js, added a response object to resource callbacks.
 - oo.on((on)=>on(path, ...)). DOM is preserved but expression is replaceable which is suitable for variabel paths. (@see example-1.html)
 - oo.oninputed. triggers on input losing focus with changed value.
-- oo.onevent(eventType, vb)
+- oo.onevent(eventType, cb, options). (example: oo.onevent('up', [()=>{alert('pre')},()=>{alert('stop bubble');return false;}]).onevent('click',()=>{}))
 - oo.context.deep. Deep clone object. (example: oo.context.deep({a:1, b:2}, {c:3, b:4}) result: {a:1,b:4,c:3})
 ### Changed
 - resolvePromisesAsync (deprecated resolvePromises).

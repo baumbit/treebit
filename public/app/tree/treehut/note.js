@@ -258,12 +258,12 @@ function NoteControls({oo, $, go}) { // reply, boost, block, share, information
         alert('TODO');
     });
 
-    oo(Icon, 'stars', {md:24}).onclick(() => {
-        alert('TODO');
+    oo(Icon, 'stars', {md:24}).onevent('click', () => {
+        alert('stars clicked');
     });
 
     const right = {
-        button: oo('button').onevent('down', () => {
+        button: oo('button').onevent('click', () => {
             return swipeTo('right');
         }),
         index: -1,

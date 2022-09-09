@@ -149,6 +149,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 // vertical
                 let y;
                 if(stateY.drag) {
+                    isClickEnabled = false;
                     clearBranchLeftRight(head); //console.log('dragging so clear');
                     if(!dragOffsetY) {
                         dragOffsetY = Math.floor(head.topY - stateY.y);
@@ -162,6 +163,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 let x = 0; //console.log({branchPoint});
                 if(branchPoint.selectedBinder) {                                  //console.log('selectedBinder', {...stateX}, {...branchPoint});
                     if(stateX.drag) {                                                    //console.log('drag', stateX, branchPoint.dragOffsetX);
+                        isClickEnabled = false;
                         if(branchPoint.dirty) {                                         //console.log('drag', stateX, branchPoint.dragOffsetX);
                             resetScrollY(false);
                             branchPoint.dirty = false;
@@ -185,6 +187,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                         x = LEFT_MARGIN_NOTE;
                         resetScrollY(true);
                         resetScrollX(true);
+                        isClickEnabled = true;
                     }
                     else if(stateX.end) {                                                       //console.log('ended');
                         snapX();
@@ -437,10 +440,15 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         //else console.log('no noteId', noteId);
     }
 
+    let isClickEnabled = true;
     function addSelectHandler(binder) {
         binder.oo.onevent('down', (svnt) => {
             updateBranchPoint(binder);
         });
+        binder.oo.onevent('click', [
+            () => !!isClickEnabled, // clicks prevented on note when dragging
+            () => {}
+        ]);
     }
 
     function scrapeBranchPointBinder(branchPoint, findId) {
