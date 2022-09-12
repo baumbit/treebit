@@ -38,14 +38,11 @@ function CabinetHeader({oo, css, go, $, res, setres, store}) {
     css(`
     CabinetHeader {
         width: 100%;
+        min-height: 330px;
     }
 
     CabinetHeader SectionIcon Icon {
         color: var(--greenlight);
-    }
-
-    CabinetHeader PageSection SectionIcon {
-        height: 35px;
     }
     `);
 

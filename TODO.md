@@ -1033,10 +1033,10 @@ Steps
             //    fix: propagate event down to children
             //Fix note card controls clickable during drag. Press down on control icon and then drag, should abort icon click.
             //Fix node profile screen top bounce.
-            Fix note card hidden in tree when scrolling horizontally.
+            //fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
+>            Fix note card hidden in tree when scrolling horizontally.
             fix: missing ":" on node nrls on node profile page
             fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
-            fix: cabinet; add signer; does not show up first time opening cabinet, "hidden" behind signer list items
             fix: scrolling on home page (and other pages too) locks on mobile
             fix: scrolling in share modal locks scrolling
             fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)

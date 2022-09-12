@@ -45,7 +45,8 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
         }
             //if(oo.__size) console.log(size, '->', oo.__size, oo.elm);
             //oo.__size = size;
-        return {start, end, size};
+        const r = {start, end, size}; //console.log(r, oo.elm);
+        return r;
     }
 
     function init(f, isForceRender) { //console.log('init');
@@ -143,7 +144,7 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
                     if(drag.drag) {
                         ignoreDragUp = true;
                     }
-                    console.log('bounce', o);
+                    //console.log('bounce', o);
                     scrollHandler.bounce();
                 }
             }
