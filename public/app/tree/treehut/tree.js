@@ -235,7 +235,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 } else if(o.oo.elm.style.visibility === 'hidden') {
                     o.oo.elm.style.visibility = 'visible';
                 }
-            } else if(o.oo.elm.style.visibility === 'hidden') {
+            } else if(o.oo.elm.style.visibility !== 'visible') {
                 o.oo.elm.style.visibility = 'visible';
             }
             //console.log(o.left, o.right);
