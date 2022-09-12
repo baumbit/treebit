@@ -5,11 +5,11 @@
  */
 import {createScrollHandler} from './scroll.js';
 
-export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
+export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) { //console.log({Y_MARGIN});
     let isRendering = false,
         DOWN = 1,
         UP = -1,
-        BOUNCE_TOP = startOffset - Y_MARGIN, // must be greater then topRemoveItem (i.e below topRemoveItem in GUI)
+        BOUNCE_TOP = startOffset + Y_MARGIN, // must be greater then topRemoveItem (i.e below topRemoveItem in GUI)
         //scrollAnchorY = 0,
         isResized = true,
         head = null,
@@ -137,10 +137,13 @@ export function InfiniteList(oo, type, startOffset=0, endOffset=0, Y_MARGIN=0) {
         while(o/* && i < 100*/) { //log({i, o, x}); i++;
             let isTail = !o.next;
             if(isTail) {
-                if(pos < BOUNCE_TOP) {
+
+                //pos = pos + o.sizeBound + Y_MARGIN;                                    //console.log(pos > endBound, endBound);
+                if(pos + o.sizeBound < BOUNCE_TOP) {
                     if(drag.drag) {
                         ignoreDragUp = true;
                     }
+                    console.log('bounce', o);
                     scrollHandler.bounce();
                 }
             }

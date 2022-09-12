@@ -1032,7 +1032,7 @@ Steps
             //fix: buttons in node profile "node can be reached on" does not respond
             //    fix: propagate event down to children
             //Fix note card controls clickable during drag. Press down on control icon and then drag, should abort icon click.
-            Fix node profile bounce at screen top, when scrolling vertically.
+            //Fix node profile screen top bounce.
             Fix note card hidden in tree when scrolling horizontally.
             fix: missing ":" on node nrls on node profile page
             fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
