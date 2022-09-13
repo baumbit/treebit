@@ -41,6 +41,25 @@ function addIcon(name, i, path, active, oo) {
     }).style({color: active ? 'var(--grayspace)': null});
 }
 
+function addBackIcon({oo, go}, isHome=false) {
+    if(go.isBack()) {
+        oo(Icon, 'arrow_back_ios').onclick(() => {
+            if(go.isBackRoot()) {
+                go.root();
+            } else {
+                go.back();
+            }
+        });
+        return !go.isBackRoot();
+    }
+
+    if(isHome) addIcon('home', 'home', '/', null, oo);
+    else {
+        oo('div');
+        return true;
+    }
+}
+
 function addEmpty(oo, cnt=1) {
     for(let i = 0; i < cnt; i++) oo('span');
 };
@@ -51,13 +70,9 @@ export function Bar({oo, go}) {
 
 export function BackBar({oo, go, css}) {
     addCss('BackBar', oo);
-    if(go.isBack()) {
-        oo(Icon, 'arrow_back_ios').onclick(() => {
-            go.back();
-        });
-    } else oo('div');
+    const isBack = addBackIcon(oo);
     addEmpty(oo, 3);
-    addIcon('home', 'home', '/', null, oo);
+    if(isBack) addIcon('home', 'home', '/', null, oo);
 };
 
 //export function CabinetBar({oo, go, css}) {
@@ -78,24 +93,16 @@ export function HomeBar({oo, go, css}) {
 
 export function ComposeBar({oo, go}) {
     addCss('ComposeBar', oo);
-    if(go.isBack()) {
-        oo(Icon, 'arrow_back_ios').onclick(() => {
-            go.back();
-        });
-    } else {
-        addEmpty(oo, 4);
-        addIcon('home', 'home', '/', null, oo);
-    }
+    const isBack = addBackIcon(oo);
+    addEmpty(oo, 3);
+    if(isBack) addIcon('home', 'home', '/', null, oo);
 };
 
 export function AccountBar({oo, go}) {
     addCss('AccountBar', oo);
-    oo(Icon, 'arrow_back_ios').onclick(() => {
-        go.back();
-    });
+    addBackIcon(oo, true);
     addEmpty(oo, 3);
     oo(Icon, 'settings_applications').onclick(() => {
-
         window.open('/dashboard', '_blank');
     });
 };

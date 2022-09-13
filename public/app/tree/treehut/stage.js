@@ -30,7 +30,6 @@ import {Home} from './home.js';
 import {Compose} from './compose.js';
 import {TreehutSignin, SigninRefresh} from './signin.js';
 import {Account} from './account.js';
-import {Admin} from './hub/admin.js';
 import {Dev} from './dev.js';
 import {Splash} from './splash.js';
 import {feeds} from '../feed-manager.js';
@@ -319,14 +318,6 @@ export function createStage({oo, on, route, go, $:{$, set}, createCue}, log) {
         //        oo.init(noteId, hints.swipe, replace);
         //    });
         //}
-    });
-
-    //
-    // hub pages
-    //
-    const admin = {Admin};
-    route('/admin', () => {
-        fadein(admin)
     });
 
     //

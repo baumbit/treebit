@@ -48,6 +48,7 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
         // default ooptions used internally in oo
         if(ooptions.routerBasename === undefined) ooptions.routerBasename = '';
         if(ooptions.renderVirtual === undefined) ooptions.renderVirtual = false;
+        if(ooptions.maxRouterHistory === undefined) ooptions.maxRouterHistory = 100;
         context.ooptions = ooptions;
         if(DEBUG > 0) {
             OO.debug(context, DEBUG);
@@ -1319,9 +1320,11 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                 }; //console.log('-> goto route:', route);
                 context.storekeeper.remove(undefined, ['route']);
                 if(hints.popstate) {
-                    context.history.replaceState({path, title}, title, stateUrl);
+                    //context.history.replaceState({path, title}, title, stateUrl);
+                    replaceState(path, title, stateUrl);
                 } else {
-                    context.history.pushState({path, title}, title, stateUrl); //console.log("push ", {path, title});
+                    //context.history.pushState({path, title}, title, stateUrl); //console.log("push ", {path, title});
+                    pushState(path, title, stateUrl); //console.log("push ", {path, title});
                     context.history.onpopstate(event => { //console.log("pop ", event);
                         if(event.state) {
                             go(event.state.path, event.state.title, {popstate:true, synthetic: isGoBack});
@@ -1338,18 +1341,34 @@ const OO = function(rootElement, store={}, context={}, ooptions={}, pAArent) { /
                 goTo(undefined, undefined, {reload:true});
             }
 
+            let appHistory = [];
             let isGoBack;
+            function replaceState(path, title, stateUrl) {
+                const state = {path, title};
+                if(appHistory.length) appHistory[appHistory.length-1] = {state, stateUrl};
+                context.history.replaceState(state, title, stateUrl);
+            }
+            function pushState(path, title, stateUrl) {
+                const state = {path, title};
+                appHistory.push({state, stateUrl});
+                if(appHistory.length > ooptions.maxRouterHistory) appHistory.shift();
+                context.history.pushState({path, title}, title, stateUrl); //console.log("push ", {path, title});
+            }
             function goBack() {
                 isGoBack = true;
+                appHistory.pop();
                 context.history.back();
                 isGoBack = false;
             }
 
             const go = goTo;
             go.reload = reload;
+            go.getBrowserHistory = () => context.history;
+            go.getBackState = () => appHistory[appHistory.length-2];
+            go.getAppHistory = () => appHistory;
+            go.isBackRoot = () => go.isBack() && (go.getBackState().state.path === '' || go.getBackState().state.path === '/');
+            go.isBack = () => appHistory.length > 1;
             go.back = goBack;
-            go.isBack = () => context.history.length() > 1;
-            go.getPrev = () => context.history;
             go.root = () => goTo('/', undefined, undefined, undefined, '');
 
             return {
