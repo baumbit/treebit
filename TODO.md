@@ -1078,6 +1078,7 @@ Steps
         DoD:
             able to run two different hotels (on different machines) and exchange data across peers on different hotels
     MVP (this list is un-ordered, order it before starting)
+        add: tor selected clients auth (so that TOR can block incomming requests from unknown sources)
         fix: optimize rendering by NOT re-calculating size all of the time. instead set dirty flag and re-use html elements
         fix: sometimes you need to click twice on a button before click is registered
         add: feeds, topmost signer

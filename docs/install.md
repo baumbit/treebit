@@ -1,44 +1,40 @@
 # Install
 
 The source code in this project has zero package dependencies, so there is no neeed to install any packages.
-It does however depend on some third-party softwares:
-Always required: NodeJs
-Optional but required for Tor network: TOR
-Optional but required for SSL: OpenSSL
+It does however depend on some third-party softwares: NodeJs (required), TOR (optional) and OpenSSL (optional).
 
 When you have installed the dependencies, run this command to launch the Treebit Hotel and follow the instructions:
 $ ./launch.sh
 
-## NodeJs
-Node is required to serve Treehut Hotel.
+* NodeJs (https://nodejs.org)
+Always required to serve Treehut Hotel.
 
-To run the Treehut Hotel you first need to install:
-https://nodejs.org
+* TOR (https://www.torproject.org): Optional but required for Tor network
+Tor is optional, but if you want to publish the Treehut Node on the Tor network.
 
+* OpenSSL
+Optional but required to develope on mobile phone and/or make the Treehut Hotel available on internet.
 
-## Tor
-Tor is optional, but if you want to publish the Treehut Node on the Tor network, you need to install:
-https://www.torproject.org
-
-TODO Its optional, but possible limit connections to the onion service to athorized clients only.
-
-(Optional) Monitor TOR:
-https://nyx.torproject.org/#download
 
 ## MacOS
-To install Tor on MacOS you first need to install brew: https://brew.sh
+To install Tor and OpenSSL on MacOS you first need to install brew: https://brew.sh
 $ /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
 
+### Tor on MacOS
 Install Tor using brew:
+$ brew install tor
+
+Optional: you can limit which clients can connect to your tor onion service, but Openssl on MacOS does not support algorithm x25519 so do this:
+$ brew install openssl@3
+Then see: https://community.torproject.org/onion-services/advanced/client-auth/ 
+
+### OpenSSL on MacOS
 $ brew install openssl@3
 
-TODO (Optional: client authorization) Openssl on MacOS does not support algorithm x25519, install:
-TODO $ brew install openssl
-TODO do this in nodejs script (tor.js): https://community.torproject.org/onion-services/advanced/client-auth/ 
 
 ## Raspberry PI 4
 To install NodeJs;
-@see tree/bin/install-nodejs-on-raspberrypi4.sh
+$ ./bin/install-nodejs-on-raspberrypi4.sh
 
 To install Tor:
 $ sudo apt-get install -y tor
