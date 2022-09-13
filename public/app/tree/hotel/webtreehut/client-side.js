@@ -6,7 +6,7 @@ import {createPlatformstyle} from '../../style.js';
 import OO from '../../../oo/oo.js';
 import {createSnatchClient} from '../../../oo/snatch-oo.js';
 
-export function createTreehut(oo) {
+export function createTreehut(oo, µ) {
     const
         html = oo('html'),
         head = html('head'),
@@ -44,6 +44,20 @@ export function createTreehut(oo) {
         if(config.SERVER_RENDERING_DISABLED !== undefined) console.log('Server rendering:', !config.SERVER_RENDERING_DISABLED);
         //body('table')('tr')('td')(Treehut);
         body(App)(Treehut);
+
+        // dev: begin
+        if(µ.app.DEV) {
+            window.__TREEHUT__ = {
+                context: oo.context,
+                oo,
+                µ,
+            };
+            body('span', 'dev').style({position:'fixed', top:'5px', left: '5px', color: '#09F'}).onclick(() => {
+                alert('Treehut is running in developer mode.\r\nTo access dev tools open browser developer console and type: __TREEHUT__');
+            });
+        }
+        // dev: end
+
     }
 
     return oo;
@@ -75,15 +89,14 @@ export function createTreehutClientInBrowser() {
                     ...createResource(µ.resourceClient, !config.CLIENT_CONTINOUS_POLLING_DISABLED, log)
                 }
             };
+
         const oo = window.__OO__(ooptions, (oo, done, options) => {
             µ.app = options.app; console.log(options);
             snatch.setBasename(options.ooptions.routerBasename);
-            createTreehut(oo);
+            createTreehut(oo, µ);
             done();
             log(µ);
         });
-        window._u_ = µ;
-        window._oo_ = oo; // not required but nice for dev purposes
     }, 800);
 };
 

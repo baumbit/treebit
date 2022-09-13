@@ -1038,11 +1038,11 @@ Steps
             //fix: missing ":" on node nrls on node profile page
             //fix: if auto-sign in takes you to the account poage or similar, BACK will take you to signin page. take yo home instead
             //        add: goAppBack goBrowserBack (internal hisyory)
+            //fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
+            //add: DEV mode on page, to make sure that shows
             fix: scrolling on home page (and other pages too) locks on mobile
             fix: scrolling in share modal locks scrolling
-            fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
             fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
-            add: DEV mode on page, to make sure that shows
             update: install.md
                 fix: "Install TOR": brew install TOR not openssl
                 //add: TOR will start automatically comment

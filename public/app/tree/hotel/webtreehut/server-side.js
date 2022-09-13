@@ -2,6 +2,7 @@ import {createResponseObject} from '../../../oo/resource-oo.js';
 import {createResource} from '../../treehut/treehut.js';
 import {resourceServer} from './webtreehut.js';
 import {createTreehut} from './client-side.js';
+import {getDEV} from '../server.js';
 import {mockupSigners, mockupForest} from '../../mockup.js';
 import OO from '../../../oo/oo.js';
 
@@ -16,7 +17,7 @@ export async function createTreehutClientForServer({ß, config, routerBasename})
         µ = {config, log};
     µ.µ = µ;
     µ.resourceClient = createResourceClientForServer(ß);
-    µ.app = {foo:'bar'}; // TODO foo
+    µ.app = {DEV:getDEV()};
     const
         isPollEnabled = false, // if this was true treehut instance on server would contiously query api.
         ooptions = {

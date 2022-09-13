@@ -69,6 +69,7 @@ Note that it is possible to run many hotel instances at the same time. The diffe
     process.exit();
 }
 
+export function getDEV() { return DEV; };
 export function getBasePathDb() { return BASE_PATH_DB; };
 
 // setup all (even those not used in this file) platform specific dependencies

@@ -16,12 +16,6 @@ import {createClientStorage} from './client-storage.js';
 import {handleInvitesAsync} from './connect.js';
 
 export function Treehut(oo, {log, µ}) {
-    // dev: begin
-    window.__TREEHUT__ = {
-        context: oo.context
-    }; //console.log(oo.context.store);
-    // dev: end
-
     // used for putting tags in treehut root element etc.,
     // this is safe because this element is never destroyed.
     µ.treehutrOOt = oo;
