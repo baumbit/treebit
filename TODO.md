@@ -1048,7 +1048,8 @@ Steps
         //add: when clearnet, disable topenssl (this way less to install etc)
         //bin/launch.sh
         //    update: add a "simple startup" that autofills everything and startsyp
->        data integrity:
+        //tree.js: Fix hidden card notes when swiping.
+>>        data integrity:
             //create script that starts and stops bucketdb FAST to try to crash it and make sure it can recover. use oo/test-bucket
             //run treehut hotel and try yo crash it
             run treehut and fix errors that occurs

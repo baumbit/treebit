@@ -229,10 +229,10 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
                 else o.x = x;
                 //o.oo.elm.style.transform = "translateX" + Math.floor(o.x) + "px)";
                 o.oo.elm.style.left = o.x + 'px';                               //console.log('x=', o.x);
+                o.right = o.x + o.width; // instead of updateBound(o)
                 if(o.right <= 0 || o.x > VIEW_WIDTH) {
                     o.oo.elm.style.visibility = 'hidden';
-                    //console.log('hidden', o.right, o.x);
-                } else if(o.oo.elm.style.visibility === 'hidden') {
+                } else if(o.oo.elm.style.visibility !== 'visible') {
                     o.oo.elm.style.visibility = 'visible';
                 }
             } else if(o.oo.elm.style.visibility !== 'visible') {
@@ -574,6 +574,7 @@ export function List({oo, css, go, resAsync, $}, {µ, log}) {                   
         o.height = Math.floor(rect.bottom - rect.top);
         o.left = rect.left;
         o.right = rect.right;
+        o.width = rect.width;
     }
 
     function requestRender(){
