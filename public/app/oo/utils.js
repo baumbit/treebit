@@ -1,6 +1,6 @@
 //const consoleLog = console.log; console.log = function() { console.trace(...arguments); };
 
-const DEBUG = true; // should be true during development to reduce bugs. should be false in production.
+let DEBUG = false; // should be true during development to reduce bugs. should be false in production.
 if(DEBUG) console.info('utils.js running in debug mode');
 
 // ------------ ASYNC FRIENDLY
@@ -142,7 +142,8 @@ function nodeJsExitHandler() {
     };
 }
 
-export function setupInNodeJs({crypto, Buffer}) {
+export function setupInNodeJs({crypto, Buffer, debug=false}) {
+    DEBUG = debug;
     nodejscrypto = crypto;
     subtle = nodejscrypto.webcrypto.subtle;
     btoa = s => Buffer.from(s, 'binary').toString('base64');

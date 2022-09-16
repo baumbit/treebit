@@ -63,7 +63,7 @@ Development
     --tor-new           If "=true" the current torrc will be deleted and a fresh one created. (default: ${newTorrc})
     --tor-publish       If "=true" the onion service will be published. (default: ${torPublish})
     --tor-network       If "=false" TOR will be started, but network communication will be turned off. (default: ${torNetEnabled})
-    --dbtest            If "=true" then run bucketdb test suite also on file ssytem (slow). (default: ${isDbTestFile})
+    --dbtest            If "=true" then run bucketdb test suite also on file system (slow). (default: ${isDbTestFile})
 
 Note that it is possible to run many hotel instances at the same time. The different instances are uniquely identified using the clearnet host port (also when only accessible through TOR for the outside world). Each instance will store the hosted node data, TOR resources, etc, on the file system in a folder named by the host port. A hotel instance gets its own TOR instance, and all the nodes hosted by a hotel share the same TOR instance.`);
     process.exit();

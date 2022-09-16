@@ -1040,19 +1040,24 @@ Steps
             //        add: goAppBack goBrowserBack (internal hisyory)
             //fix: scroll x while clicking bubble buttons to scroll other row     (maybe a simple flag if animation is running to prevent all clicks)
             //add: DEV mode on page, to make sure that shows
-            fix: scrolling on home page (and other pages too) locks on mobile
-            fix: scrolling in share modal locks scrolling
-            fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
-            update: install.md
-                fix: "Install TOR": brew install TOR not openssl
-                //add: TOR will start automatically comment
-                //add: how to start in install.md but make sure information is not duplicated in readme.md
+            //update: install.md
+            //    fix: "Install TOR": brew install TOR not openssl
+            //    //add: TOR will start automatically comment
+            //    //add: how to start in install.md but make sure information is not duplicated in readme.md
         //fix: launch dev starts several instances of node
         //add: when clearnet, disable topenssl (this way less to install etc)
         //bin/launch.sh
         //    update: add a "simple startup" that autofills everything and startsyp
-        //    add: wizard / add mode
-        add: launch.sh create prod openssl certs
+>        data integrity:
+            //create script that starts and stops bucketdb FAST to try to crash it and make sure it can recover. use oo/test-bucket
+            //run treehut hotel and try yo crash it
+            run treehut and fix errors that occurs
+        scrolling:
+            fix: scrolling on home page (and other pages too) locks on mobile
+            fix: scrolling in share modal locks scrolling
+            fix: run bucketdb test and see that it works. then fix the async complaints... OR ??!!?!!!
+        production:
+            launch.sh create prod openssl certs
         make sure µ.config has correct values
                 resource continous polling should be enabled
                 make sure this works:

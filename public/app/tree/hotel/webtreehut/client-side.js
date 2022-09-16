@@ -52,7 +52,7 @@ export function createTreehut(oo, µ) {
                 oo,
                 µ,
             };
-            body('span', 'dev').style({position:'fixed', top:'5px', left: '5px', color: '#09F'}).onclick(() => {
+            body('span', 'dev').style({position:'fixed', top:'5px', left: '5px', color: '#09F', zIndex: 99999999}).onclick(() => {
                 alert('Treehut is running in developer mode.\r\nTo access dev tools open browser developer console and type: __TREEHUT__');
             });
         }

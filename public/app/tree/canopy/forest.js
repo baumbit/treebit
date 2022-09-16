@@ -34,7 +34,7 @@ export async function createForestAsync(ß, signerStorage) {
         getLufoAsync = ß.storage.createBuilder(`/forest/`, {persistent:true, lufo:true}),
         scorelist = await getLufoAsync('scorelist'), // all note scores in a descending list
         //sessionLufo = null,
-        sessionLufo = await getLufoAsync('session'),
+        //sessionLufo = await getLufoAsync('session'),
         scoretree = await createScoretreeAsync(ß, {}),
         treeStorage = await createTreeStorageAsync(ß);
 
@@ -62,14 +62,14 @@ export async function createForestAsync(ß, signerStorage) {
         await signerStorage.addNoteAsync(note, signerId);//((.catch(console.log); // TODO HARDEN move this to top of function, because if it fails do not add to treeStorage
 
         // add note to session
-        const prev = noteNode.note.data.prev;
-        if(prev) {
-            const value = sessionLufo && await sessionLufo.getValueAsync(prev);
-            if(value && value.children) {
-                const children = await scoretree.useAsync(prev).children.map(({noteId, branchScore}) => { return {noteId, branchScore}; });
-                if(sessionLufo) await sessionLufo.addAsync(prev, {children});
-            }
-        }
+        //const prev = noteNode.note.data.prev;
+        //if(prev) {
+        //    const value = sessionLufo && await sessionLufo.getValueAsync(prev);
+        //    if(value && value.children) {
+        //        const children = await scoretree.useAsync(prev).children.map(({noteId, branchScore}) => { return {noteId, branchScore}; });
+        //        if(sessionLufo) await sessionLufo.addAsync(prev, {children});
+        //    }
+        //}
 
         return noteNode;
         //console.log('noteNode:', noteNode, 'parent:', grabParent(noteNode));
@@ -85,7 +85,7 @@ export async function createForestAsync(ß, signerStorage) {
         // TODO imporve on debug 
         if(noteNode.note.debug && noteNode.note.debug.deterministicScoring) score = noteNode.note.debug.deterministicScoring;
 
-        if(sessionLufo) sessionLufo.addAsync(noteNode.note.noteId, null);
+        //if(sessionLufo) sessionLufo.addAsync(noteNode.note.noteId, null);
         const scoretreeNode = await scoretree.addNoteNodeAsync(noteNode, score);
 
         // scorelist
@@ -142,25 +142,26 @@ export async function createForestAsync(ß, signerStorage) {
         } else if(!noteId) {
             return [];
         }
-        let session;
-        if(sessionLufo) {
-            session = await sessionLufo.useAsync(noteId);              //console.log('session found', {session, noteId});
+        //let session;
+        //if(sessionLufo) {
+        //    session = await sessionLufo.useAsync(noteId);              //console.log('session found', {session, noteId});
+        //}
+        //if(session && session.value) {
+        //    children = session.value.children;                          log?.n(5, 'session found', {noteId, session, children});
+        //    noteNode = await grabNodeAsync(undefined, noteId);
+        //    if(noteNode.children.length !== children.length) {
+        //        console.log('session children', children, 'server children', noteNode.children);
+        //        throw 'TODO: verify 1) scoretree matches node children (if not rebuild scoretree) 2) if OK rebuild session';
+        //    }
+        //} else { //} else if(noteId){
+        const scoreNode = await scoretree.useAsync(noteId); //console.log('HAD ALL OF THIS', {noteNode, noteId, scoreNode});
+        if(scoreNode) {
+            children = scoreNode.children.map(({noteId, branchScore}) => { return {noteId, branchScore}; }); // deep clone
+            //if(sessionLufo) {
+            //    await sessionLufo.addAsync(noteId, {children});           //log?.n(3, 'session added', {noteId, children});
+            //}
         }
-        if(session && session.value) {
-            children = session.value.children;                          log?.n(5, 'session found', {noteId, session, children});
-            noteNode = await grabNodeAsync(undefined, noteId);
-            if(noteNode.children.length !== children.length) {
-                throw 'TODO: verify 1) scoretree matches node children (if not rebuild scoretree) 2) if OK rebuild session';
-            }
-        } else { //} else if(noteId){
-            const scoreNode = await scoretree.useAsync(noteId); //console.log('HAD ALL OF THIS', {noteNode, noteId, scoreNode});
-            if(scoreNode) {
-                children = scoreNode.children.map(({noteId, branchScore}) => { return {noteId, branchScore}; }); // deep clone
-                if(sessionLufo) {
-                    await sessionLufo.addAsync(noteId, {children});           //log?.n(3, 'session added', {noteId, children});
-                }
-            }
-        }
+        //}
         return children || [];
     }
 

@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 const version = '0.0.27';
 //
 //var oldlog=console.log;console.log = function(){oldlog(...arguments);console.trace()};
@@ -352,7 +353,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         return `${path}/${name}.bck`;
     }
 
-    async function startAsync() {                           console.log('startAsync', path);
+    async function startAsync() {                           //console.log('startAsync', path);
         try {
             await stat(path);                               //console.log('found db dir', path);
         } catch(e) {
@@ -377,12 +378,12 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
 
     async function pathExistsAsync(s) {
         try {
-            console.log('checking if path exists', s);
+            //console.log('checking if path exists', s);
             const a = await stat(s);
-            console.log('true, path exists', s);
+            //console.log('true, path exists', s);
             return true;
         } catch(e) {
-            console.log('false, path do not exists', s);
+            //console.log('false, path do not exists', s);
             return false;
         }
 
@@ -436,7 +437,7 @@ export async function createFileMediumAsync({bucketMaxCount, bucketMaxBytes, sor
         await deleteFileAsync(workbenchPath); //console.log('deleted workbenchPath', {workbenchPath});
     }
 
-    async function deleteSafuFileAsync() {          console.log('deleteSafuFileAsync', {safuFileName});
+    async function deleteSafuFileAsync() {          //console.log('deleteSafuFileAsync', {safuFileName});
         return rm(safuFileName);
     }
 
