@@ -62,6 +62,7 @@ if [ "$1" == "--simshim" ] ; then
     #python -m SimpleHTTPServer 9000
     # switch depending on python version
     python3 -m http.server 9000
+    exit
 fi
 
 if [[ "$@" =~ "--clearnet=https" ]] ; then
