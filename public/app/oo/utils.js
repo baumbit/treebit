@@ -271,7 +271,8 @@ export function createOrl(url, isProtocolMissing) { //console.log({url, isProtoc
         origin: isOnion ? url.host : url.origin,
         protocol: isOnion ? null : url.protocol,
         isOnion,
-        isClearnet: !isOnion
+        isClearnet: !isOnion,
+        url
     };
     orl.href = `${orl.origin}${orl.pathname}${orl.search}${orl.hash}`;
     return orl;

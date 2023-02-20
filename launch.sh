@@ -41,7 +41,9 @@ if [ "$1" == "--help" ] ; then
     echo "Examples:"
     echo -e "Launch Hotel in dev mode, with SSL and TOR onion service both disabled: ${CYAN}$ ./launch.sh --dev --clearnet=http --tor-port=false${RESET}"
     echo -e "Launch Hotel in dev mode, at port 9002 and TOR onion service at default port: $ ${CYAN}./launch.sh --dev --port=9002${RESET}"
+echo -e "Launch Hotel in dev mode, TOR onion service at default port and default TOR auth: $ ${CYAN}./launch.sh --dev ---tor-auth=true${RESET}"
     echo -e "Launch Hotel in dev mode, at default port and disable TOR: $ ${CYAN}./launch.sh --dev --tor-port=false${RESET}"
+    echo -e "Launch Hotel secondary hotel instance example: $ ${CYAN}./launch.sh --dev --port=9102 --tor-port=9120 --onion-service=9121${RESET}"
     echo -e "Launch a simulated environment: $ ${CYAN}./launch.sh --simshim${RESET}"
     exit
 fi
@@ -66,7 +68,7 @@ if [ "$1" == "--simshim" ] ; then
 fi
 
 if [[ "$@" =~ "--clearnet=https" ]] ; then
-    if [ "$1" == "--dev" ] || [ "$1" == "--dev=true" ]; then
+    if [[ "$@" =~ "--dev" ]] || [[ "$@" =~ "--dev=true" ]] ; then
         if [ -f "$DIR/_dev/cert/server.cert" ] && [ -f "$DIR/_dev/cert/server.key" ]; then
             echo "dev server cert found"
         else
@@ -76,6 +78,13 @@ if [[ "$@" =~ "--clearnet=https" ]] ; then
     else
         echo "TODO create cert for production env"
     fi
+fi
+
+### Run server.js ###
+if [[ "$@" =~ "--tor-auth-create" ]] || [[ "$@" =~ "--tor-auth-import" ]] ; then
+    cd $DIR/public
+    node ./app/tree/hotel/server.js "$@"
+    exit
 fi
 
 if [[ "$@" =~ "--dev" ]] ; then

@@ -1007,7 +1007,7 @@ Steps
             //        owning data is NOT being able to prevent other people from reading it, it is preventing other people from being able to take it from you
             //        privact / anonymoity is NOT same as not being public
             //        nothing can prevent you from leaking data, therefor it will never be protected against getting public
-            //add: gitignore _secret...
+            //add: gitignore 
             // change: move tree left/right bubbles to parent
                     //draggable
                     //line should be at bottom
@@ -1049,6 +1049,13 @@ Steps
         //bin/launch.sh
         //    update: add a "simple startup" that autofills everything and startsyp
         //tree.js: Fix hidden card notes when swiping.
+        Add TOR client auth.
+                //add openssl via brew: https://stackoverflow.com/questions/43546712/how-to-generate-a-curve25519-key-pair-in-terminal
+                //make sure auth works with Tor Browser
+                //test with none-openssl generate
+>>>             make sure tree nodes can connect with auth disabled
+                make sure tree nodes can conncet with auth enabled
+        Fix started following signer toast spam.
 >>        data integrity:
             //create script that starts and stops bucketdb FAST to try to crash it and make sure it can recover. use oo/test-bucket
             //run treehut hotel and try yo crash it

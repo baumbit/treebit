@@ -48,7 +48,7 @@ export function Toast({oo, css, on}, props) {
         toast;
 
     const stopShowing = (o) => {
-        root.style({opacity: 0, zIndex: 0});
+        //root.style({opacity: 0, zIndex: 0});
         o.destroy();
         isShowing = false;
         if(o === toast) toast = null;
@@ -56,13 +56,17 @@ export function Toast({oo, css, on}, props) {
     };
 
     const update = () => {
-        if(isShowing) return;
+        //if(isShowing) return;
         const args = queue.pop();
         if(!args) return;
 
         isShowing = true;
         root.style({opacity: 1, zIndex: 'var(--ztoast)'});
         const o = root(Text, {text: args.text});
+        o.style({position: 'absolute'});
+        o.style({position: 'block'});
+        const top = (queue.length * 2);
+        o.style({top:  top + 'px'});
         o.classList({clear:true});
         o.classList({add:'fadeIn'});
         if(args.error) {
@@ -84,10 +88,10 @@ export function Toast({oo, css, on}, props) {
                 .style({pointerEvents:'all'})
                 .onclick(() => stopShowing(o));
         } else {
-            o.timer(args.ms || 1000, () => {
-                o.classList({remove:'fadeIn', add:'fadeOut'});
-                o.timer(200, () => stopShowing(o));
-            });
+            //o.timer(args.ms || 1000, () => {
+            //    o.classList({remove:'fadeIn', add:'fadeOut'});
+            //    o.timer(200, () => stopShowing(o));
+            //});
         }
 
         toast = o;

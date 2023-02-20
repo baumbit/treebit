@@ -3,6 +3,7 @@
  * TODO     this is a reverse proxy, make sure to prevent malicious entities to exploit this reverse proxy.
  */
 import * as http from 'http';
+//import * as https from 'https';
 import * as GRAPEVINE from '../grapevine/grapevine.js';
 import {createOrl} from '../../oo/utils.js';
 import {isSameHotel} from './server.js';
@@ -13,47 +14,52 @@ export const
     REJECTED = 'MESSENGER_REJECTED',
     RECEIEVE = 'MESSENGER_RECEIEVE';
 
+function clearnetRequest(orl, data, resolve, reject) {
+    // send request to external hotel
+    const postData = JSON.stringify(data);
+
+    const options = {
+        hostname: orl.hostname,
+        port: orl.port,
+        path: orl.pathname,
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData)
+        }
+    }; //console.log('[messenger.js] requestAsync on clearnet. options:', {options, orl});
+    const req = http.request(options, (res) => {
+        //console.log(`STATUS: ${res.statusCode}`);
+        //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
+        let rawData = '';
+        res.setEncoding('utf8');
+        res.on('data', (chunk) => { rawData += chunk; });
+        res.on('end', () => { console.log('rawData', rawData);
+            resolve(rawData);
+        });
+    });
+    req.on('error', reject);
+    req.write(postData);
+    req.end();
+}
+
+function torRequest(orl, data, resolve, reject) {
+    throw new Error('TODO implement SOCKS to make request');
+}
+
 function requestAsync(url, data) {  //console.log('-------->', url, data); console.trace();
     return new Promise(async (resolve, reject) => {
-
         const orl = createOrl(url);
-
         if(isSameHotel(orl)) {
             // send request to same hotel
             url = orl.pathname + orl.search;
             const {nodeId, isGrapevineApi} = parseWebTreehutUrl(url);
             if(!isGrapevineApi) reject(new Error('not a grapevine request'));
             resolve(await handleGrapevineApiAsync(nodeId, data));
+        } else if(orl.hostname.endsWith('.onion')) {
+            torRequest(orl, data, resolve, reject);
         } else {
-            // send request to external hotel
-            const postData = JSON.stringify(data);
-
-            const options = {
-                hostname: orl.hostname,
-                port: orl.port,
-                path: orl.pathname,
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Content-Length': Buffer.byteLength(postData)
-                }
-            }; //console.log('requestAsync options', options);
-
-            const req = http.request(options, (res) => {
-                //console.log(`STATUS: ${res.statusCode}`);
-                //console.log(`HEADERS: ${JSON.stringify(res.headers)}`);
-                let rawData = '';
-                res.setEncoding('utf8');
-                res.on('data', (chunk) => { rawData += chunk; });
-                res.on('end', () => { //console.log('rawData', rawData);
-                    resolve(rawData);
-                });
-            });
-
-            req.on('error', reject);
-
-            req.write(postData);
-            req.end();
+            clearnetRequest(orl, data, resolve, reject);
         }
     });
 }

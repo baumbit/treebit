@@ -9,10 +9,13 @@ const
     arg = (s, d) => {
         let a = serverArgv.find((a, i) => a.toLowerCase().startsWith('--'+s.toLowerCase()));
         if(d === undefined && a) return true;
-        if(!a) return ''+d;
+        if(!a) return d;
         a = a.split('=');
         if(a.length === 1) return d;
-        if(a.length === 2) return a[1]
+        if(a.length === 2) {
+            if(a[1] === 'false') return false;
+            return a[1]
+        }
         return undefined;
     },
     isShowHelp = arg('help') === true;
@@ -38,6 +41,8 @@ const
     // tor=<port number> | tor=false (to disable tor) | or defaults to 9020 if undefined
     PORT_TOR = arg('tor-port', 9020),
     PORT_TOR_ONION_SERVICE = arg('onion-service', 9021),
+    TOR_AUTH_CREATE = PORT_TOR && arg('tor-auth-create', false),
+    TOR_AUTH_ADD = arg('tor-auth-import', false),
     // each hotel gets a dedicated tor folder and is served by a dedicated tor instance
     PATH_TOR = `${BASE_PATH_SERVER.split('/').splice(0, BASE_PATH_SERVER.split('/').length-1).join('/')}/_secret/${PORT_CN}/tor`,
 
@@ -48,11 +53,13 @@ if(isShowHelp) {
     log(`Hotel options: [--port=string] [--host=string] [--clearnet=string] [--tor=string] [--onion-service=string] [--dbpath=string] [--basepath=string] [--dbtest=string] [--tor-new=string] [--tor-publish=string] [--tor-network=string]
 
 Hosting
-    --port              Port for server listening to clearnet. (default: ${PORT_CN})
-    --host              Server hosting address. (default: ${HOST_CN})
-    --clearnet          Server clearnet protocol. (default: ${PROTOCOL_CN})
-    --tor-port          Port number or "=false" to fully disable TOR. (default: ${PORT_TOR})
-    --onion-service     TOR onion service communication port. (default: ${PORT_TOR_ONION_SERVICE})
+    --port                  Port for server listening to clearnet. (default: ${PORT_CN})
+    --host                  Server hosting address. (default: ${HOST_CN})
+    --clearnet              Server clearnet protocol. (default: ${PROTOCOL_CN})
+    --tor-port              Port number or "=false" to fully disable TOR. (default: ${PORT_TOR})
+    --tor-auth-create       Username (or "=true") to create TOR client authorization and enable TOR client authorization.
+    --tor-auth-import       Path to an onion auth file (<username>.auth_private), such as the one created when running the create-tor-auth command.
+    --onion-service         TOR onion service communication port. (default: ${PORT_TOR_ONION_SERVICE})
 
 Internals
     --basepath          Server will serve files from this file path. (default: <project root>/public)
@@ -146,7 +153,7 @@ log('Servering to clearnet from path', BASE_PATH_SERVER, 'on port', clearnetServ
 
 // tor
 import {createOnionServiceAsync} from './tor.js';
-const tor = PORT_TOR.toLowerCase() !== 'false' && await createOnionServiceAsync(PATH_TOR, PORT_TOR, PORT_TOR_ONION_SERVICE, router, {newTorrc, torNetEnabled, torPublish});
+const tor = PORT_TOR && await createOnionServiceAsync(PATH_TOR, PORT_TOR, PORT_TOR_ONION_SERVICE, TOR_AUTH_CREATE, TOR_AUTH_ADD, router, {newTorrc, torNetEnabled, torPublish});
 if(tor) console.log('tor onion service hostname:', tor.hostname);
 else console.log('tor is disabled');
 
